@@ -15,6 +15,9 @@
            :repeat-expression
            :repeat-min
            :repeat-max
+           :?
+           :*
+           :+
            :call
            :call-symbol
            :capture
@@ -57,6 +60,15 @@
 
 (defun repeat (expression min max)
   (make-repeat :expression expression :min min :max max))
+
+(defun ? (expression)
+  (make-repeat :expression expression :min nil :max 1))
+
+(defun * (expression)
+  (make-repeat :expression expression :min nil :max nil))
+
+(defun + (expression)
+  (make-repeat :expression expression :min 1 :max nil))
 
 (defun call (symbol)
   (make-call :symbol symbol))

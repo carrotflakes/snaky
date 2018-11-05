@@ -56,6 +56,34 @@
            ,succ)
          ,fail)))
 
+(defmethod generate ((self snaky.operators:any) succ fail)
+  `(if (<= (1+ *pos*) *text-length*)
+       (progn
+         (incf *pos*)
+         ,succ)
+       ,fail))
+
+(defmethod generate ((self snaky.operators:repeat) succ fail)
+  (let ((expression (snaky.operators:repeat-expression self))
+        (min (snaky.operators:repeat-min self))
+        (max (snaky.operators:repeat-max self)))
+    (let ((pos (gensym "POS"))
+          (values (gensym "VALUES"))
+          (block (gensym "BLOCK"))
+          (i (gensym "I")))
+      `(let ((,pos *pos*)
+             (,values *values*))
+         (if (loop
+               named ,block for ,i from 0 ,@(if max `(below ,max) '())
+               do ,(generate expression
+                             nil
+                             `(return-from ,block ,(if min `(<= ,min ,i) 't)))
+               finally (return-from ,block t))
+             ,succ
+             (progn
+               (setf *pos* ,pos *values* ,values)
+               ,fail))))))
+
 (defmethod generate ((self snaky.operators:call) succ fail)
   `(if (,(snaky.operators:call-symbol self))
        ,succ
