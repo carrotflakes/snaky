@@ -138,3 +138,20 @@
                     (setf *pos* ,pos *values* ,values)
                     ,fail)
                   succ))))
+
+(defmethod generate ((self snaky.operators:@) succ fail)
+  (let ((values (gensym "VALUES")))
+    `(let ((,values *values*))
+       (setf *values* nil)
+       ,(generate (snaky.operators:@-expression self)
+                  `(progn
+                    (setf *values* (cons (reverse *values*) ,values))
+                    ,succ)
+                  `(progn
+                     (setf *values* ,values)
+                     ,fail)))))
+
+(defmethod generate ((self snaky.operators:ret) succ fail)
+  `(progn
+     (push ,(snaky.operators:ret-value self) *values*)
+     ,succ))

@@ -30,7 +30,11 @@
            :&
            :&-expression
            :!
-           :!-expression))
+           :!-expression
+           :@
+           :@-expression
+           :ret
+           :ret-value))
 (in-package :snaky.operators)
 
 (cl:use-package :cl)
@@ -67,6 +71,13 @@
 
 (defstruct !
   expression)
+
+(defstruct @
+  expression)
+
+(defstruct ret
+  value)
+
 
 (defun snaky.operators:and (&rest expressions)
   (make-and :expressions expressions))
@@ -125,3 +136,9 @@
 
 (defun ! (expression)
   (make-! :expression expression))
+
+(defun @ (expression)
+  (make-@ :expression expression))
+
+(defun ret (value)
+  (make-ret :value value))
