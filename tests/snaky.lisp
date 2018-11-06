@@ -111,4 +111,13 @@
     '(foo bar))
 
 
+(diag "call")
+
+(defrule call1 (and (ret 1) (ret 2) "a"))
+(defrule call2 (@ (and call1 call1)))
+
+(is (parse 'call2 "aa")
+    '(1 2 1 2))
+
+
 (finalize)

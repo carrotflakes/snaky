@@ -3,14 +3,12 @@
   (:export :generate
            :*text*
            :*text-length*
-           :*pos*
-           :*values*))
+           :pos
+           :values))
 (in-package :snaky.generate)
 
 (defvar *text*)
 (defvar *text-length*)
-(defvar *pos*)
-(defvar *values*)
 
 (defgeneric generate (operator succ fail))
 
@@ -19,15 +17,15 @@
         (values (gensym "VALUES"))
         (block (gensym "BLOCK")))
     `(block ,block
-       (let ((,pos *pos*)
-             (,values *values*))
+       (let ((,pos pos)
+             (,values values))
          ,(let ((succ `(progn
                          ,succ
                          (return-from ,block))))
             (dolist (exp (reverse (snaky.operators:and-expressions self)))
               (setf succ (generate exp succ nil)))
             succ)
-         (setf *pos* ,pos *values* ,values))
+         (setf pos ,pos values ,values))
        ,fail)))
 
 (defmethod generate ((self snaky.operators:or) succ fail)
@@ -35,11 +33,11 @@
         (values (gensym "VALUES"))
         (block (gensym "BLOCK")))
     `(block ,block
-       (let ((,pos *pos*)
-             (,values *values*))
+       (let ((,pos pos)
+             (,values values))
          ,(let ((fail `(progn
                          ,fail
-                         (setf *pos* ,pos *values* ,values))))
+                         (setf pos ,pos values ,values))))
             (dolist (exp (reverse (snaky.operators:or-expressions self)))
               (setf fail (generate exp nil fail)))
             fail))
@@ -47,12 +45,12 @@
 
 (defmethod generate ((self snaky.operators:str) succ fail)
   (let ((string (snaky.operators:str-string self)))
-    `(if (and (<= (+ *pos* ,(length string)) *text-length*)
+    `(if (and (<= (+ pos ,(length string)) *text-length*)
               (string= *text* ,string
-                       :start1 *pos*
-                       :end1 (+ *pos* ,(length string))))
+                       :start1 pos
+                       :end1 (+ pos ,(length string))))
          (progn
-           (incf *pos* ,(length string))
+           (incf pos ,(length string))
            ,succ)
          ,fail)))
 
@@ -67,18 +65,18 @@
          (condition (if negative
                         `(not ,conditions)
                         conditions)))
-    `(if (and (<= (1+ *pos*) *text-length*)
-              (let ((char (aref *text* *pos*)))
+    `(if (and (<= (1+ pos) *text-length*)
+              (let ((char (aref *text* pos)))
                 ,condition))
          (progn
-           (incf *pos*)
+           (incf pos)
            ,succ)
          ,fail)))
  
 (defmethod generate ((self snaky.operators:any) succ fail)
-  `(if (<= (1+ *pos*) *text-length*)
+  `(if (<= (1+ pos) *text-length*)
        (progn
-         (incf *pos*)
+         (incf pos)
          ,succ)
        ,fail))
 
@@ -90,8 +88,8 @@
           (values (gensym "VALUES"))
           (block (gensym "BLOCK"))
           (i (gensym "I")))
-      `(let ((,pos *pos*)
-             (,values *values*))
+      `(let ((,pos pos)
+             (,values values))
          (if (loop
                named ,block for ,i from 0 ,@(if max `(below ,max) '())
                do ,(generate expression
@@ -100,58 +98,63 @@
                finally (return-from ,block t))
              ,succ
              (progn
-               (setf *pos* ,pos *values* ,values)
+               (setf pos ,pos values ,values)
                ,fail))))))
 
 (defmethod generate ((self snaky.operators:call) succ fail)
-  `(if (,(snaky.operators:call-symbol self))
-       ,succ
-       ,fail))
+  `(multiple-value-bind (succ pos* values*)
+       (,(snaky.operators:call-symbol self) pos)
+     (if succ 
+         (progn
+           (setf pos pos*
+                 values (concatenate 'list values* values))
+           ,succ)
+         ,fail)))
 
 (defmethod generate ((self snaky.operators:capture) succ fail)
   (let ((pos (gensym "POS")))
-    `(let ((,pos *pos*))
+    `(let ((,pos pos))
        ,(generate (snaky.operators:capture-expression self)
                   `(progn
-                     (push (subseq *text* ,pos *pos*) *values*)
+                     (push (subseq *text* ,pos pos) values)
                      ,succ)
                   fail))))
 
 (defmethod generate ((self snaky.operators:&) succ fail)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES")))
-    `(let ((,pos *pos*)
-           (,values *values*))
+    `(let ((,pos pos)
+           (,values values))
        ,(generate (snaky.operators:&-expression self)
                   `(progn
-                    (setf *pos* ,pos *values* ,values)
+                    (setf pos ,pos values ,values)
                     ,succ)
                   fail))))
 
 (defmethod generate ((self snaky.operators:!) succ fail)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES")))
-    `(let ((,pos *pos*)
-           (,values *values*))
+    `(let ((,pos pos)
+           (,values values))
        ,(generate (snaky.operators:!-expression self)
                   `(progn
-                    (setf *pos* ,pos *values* ,values)
+                    (setf pos ,pos values ,values)
                     ,fail)
                   succ))))
 
 (defmethod generate ((self snaky.operators:@) succ fail)
   (let ((values (gensym "VALUES")))
-    `(let ((,values *values*))
-       (setf *values* nil)
+    `(let ((,values values))
+       (setf values nil)
        ,(generate (snaky.operators:@-expression self)
                   `(progn
-                    (setf *values* (cons (reverse *values*) ,values))
+                    (setf values (cons (reverse values) ,values))
                     ,succ)
                   `(progn
-                     (setf *values* ,values)
+                     (setf values ,values)
                      ,fail)))))
 
 (defmethod generate ((self snaky.operators:ret) succ fail)
   `(progn
-     (push ,(snaky.operators:ret-value self) *values*)
+     (push ,(snaky.operators:ret-value self) values)
      ,succ))

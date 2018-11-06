@@ -5,6 +5,8 @@
            :parse))
 (in-package :snaky)
 
+(defvar *cache*)
+
 (defun read-expression (exp)
   (cond
     ((stringp exp)
@@ -46,19 +48,25 @@
      (snaky.operators:call exp))))
 
 (defmacro defrule (name exp)
-  `(defun ,name ()
+  `(defun ,name (pos &aux values)
+     (declare (optimize (speed 3) (space 0) (safety 2)))
+     '(read-cache ,name)
      ,(print (generate (read-expression exp)
-               `(return-from ,name t)
-               `(return-from ,name nil)))))
+                       `(progn
+                          '(write-cache-succ ,name)
+                          (return-from ,name (values t pos values)))
+                       `(progn
+                          '(write-cache-fail ,name)
+                          (return-from ,name nil))))))
 
-(defun parse (name text &optional (pos 0))
+(defun parse (name text)
   (let ((*text* text)
         (*text-length* (length text))
-        (*pos* pos)
-        (*values* nil))
-    (if (and (funcall (symbol-function name))
-             (= (length *text*) *pos*))
-        (first *values*)
-        (error "parse failed"))))
+        (*cache* (make-hash-table :test 'equal)))
+    (multiple-value-bind
+          (succ pos values) (funcall (symbol-function name) 0)
+      (if (and succ (= (length *text*) pos))
+          (first values)
+          (error "parse failed")))))
 
 ;; -> -? -| ~ \V $input $pos $row $colu,m
