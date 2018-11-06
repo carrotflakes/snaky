@@ -47,16 +47,31 @@
     (t
      (snaky.operators:call exp))))
 
+(defmacro read-cache (name)
+  `(let ((cache (gethash (cons ',name pos*) *cache*)))
+     (when cache
+       (if (eq cache 'failed)
+           (return-from ,name nil)
+           (return-from ,name (values t (car cache) (cdr cache)))))))
+
+(defmacro write-cache-succ (name)
+  `(setf (gethash (cons ',name pos*) *cache*)
+         (cons pos values)))
+
+(defmacro write-cache-fail (name)
+  `(setf (gethash (cons ',name pos*) *cache*)
+         'failed))
+
 (defmacro defrule (name exp)
-  `(defun ,name (pos &aux values)
+  `(defun ,name (pos &aux values (pos* pos))
      (declare (optimize (speed 3) (space 0) (safety 2)))
-     '(read-cache ,name)
+     (read-cache ,name)
      ,(print (generate (read-expression exp)
                        `(progn
-                          '(write-cache-succ ,name)
+                          (write-cache-succ ,name)
                           (return-from ,name (values t pos values)))
                        `(progn
-                          '(write-cache-fail ,name)
+                          (write-cache-fail ,name)
                           (return-from ,name nil))))))
 
 (defun parse (name text)

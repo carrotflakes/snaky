@@ -120,4 +120,28 @@
     '(1 2 1 2))
 
 
+(diag "cache")
+
+(defrule cache1 (and (ret 1) (ret 2) "a"))
+(defrule cache2 (@ (and (& cache1) cache1)))
+
+(is (parse 'cache2 "a")
+    '(1 2))
+
+
+(diag "arithmetic")
+
+(defrule arithmetic (and ws additive ws))
+(defrule additive (or (@ (and multiplicative ws (capture "+") ws additive))
+                      multiplicative))
+(defrule multiplicative (or (@ (and primary ws (capture "*") ws multiplicative))
+                            primary))
+(defrule primary (or int
+                     (and "(" ws additive ws ")")))
+(defrule int (capture (and (? "-") (+ (class "0-9")))))
+(defrule ws (* (class " ")))
+
+(is (parse 'arithmetic "1 + 2 * (3 + 4)")
+    '("1" "+" ("2" "*" ("3" "+" "4"))))
+
 (finalize)
