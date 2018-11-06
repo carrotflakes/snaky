@@ -26,7 +26,11 @@
            :call
            :call-symbol
            :capture
-           :capture-expression))
+           :capture-expression
+           :&
+           :&-expression
+           :!
+           :!-expression))
 (in-package :snaky.operators)
 
 (cl:use-package :cl)
@@ -56,6 +60,12 @@
   symbol)
 
 (defstruct capture
+  expression)
+
+(defstruct &
+  expression)
+
+(defstruct !
   expression)
 
 (defun snaky.operators:and (&rest expressions)
@@ -109,3 +119,9 @@
 
 (defun capture (expression)
   (make-capture :expression expression))
+
+(defun & (expression)
+  (make-& :expression expression))
+
+(defun ! (expression)
+  (make-! :expression expression))

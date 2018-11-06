@@ -74,8 +74,7 @@
            (incf *pos*)
            ,succ)
          ,fail)))
-    
-
+ 
 (defmethod generate ((self snaky.operators:any) succ fail)
   `(if (<= (1+ *pos*) *text-length*)
        (progn
@@ -117,3 +116,25 @@
                      (push (subseq *text* ,pos *pos*) *values*)
                      ,succ)
                   fail))))
+
+(defmethod generate ((self snaky.operators:&) succ fail)
+  (let ((pos (gensym "POS"))
+        (values (gensym "VALUES")))
+    `(let ((,pos *pos*)
+           (,values *values*))
+       ,(generate (snaky.operators:&-expression self)
+                  `(progn
+                    (setf *pos* ,pos *values* ,values)
+                    ,succ)
+                  fail))))
+
+(defmethod generate ((self snaky.operators:!) succ fail)
+  (let ((pos (gensym "POS"))
+        (values (gensym "VALUES")))
+    `(let ((,pos *pos*)
+           (,values *values*))
+       ,(generate (snaky.operators:!-expression self)
+                  `(progn
+                    (setf *pos* ,pos *values* ,values)
+                    ,fail)
+                  succ))))

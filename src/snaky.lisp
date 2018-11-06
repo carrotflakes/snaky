@@ -20,7 +20,11 @@
        (* (snaky.operators:* (read-expression (second exp))))
        (+ (snaky.operators:+ (read-expression (second exp))))
        (call (snaky.operators:call (second exp)))
-       (capture (snaky.operators:capture (read-expression (second exp))))))))
+       (capture (snaky.operators:capture (read-expression (second exp))))
+       (& (snaky.operators:& (read-expression (second exp))))
+       (! (snaky.operators:! (read-expression (second exp))))))
+    (t
+     (snaky.operators:call exp))))
 
 (defmacro defrule (name exp)
   `(defun ,name ()
@@ -51,6 +55,8 @@
    (defrule fuga
      (capture (repeat (str "a") 2 4)))
    (defrule cls (class "ab-cd"))
+   (defrule pla (and (& (class "a-d")) (any)))
+   (defrule nla (and (! (class "a-d")) (any)))
 
    (print (safe-parse 'start "yo"))
    (print (safe-parse 'start "aaaahoge"))
@@ -66,5 +72,9 @@
    (print (safe-parse 'cls "c"))
    (print (safe-parse 'cls "d"))
    (print (safe-parse 'cls "e"))
+   (print (safe-parse 'pla "a"))
+   (print (safe-parse 'pla "e"))
+   (print (safe-parse 'nla "a"))
+   (print (safe-parse 'nla "e"))
 ))
-;; charactor-class & ! @ -> -? -| ~ \V $input $pos $row $colu,m
+;; @ -> -? -| ~ \V $input $pos $row $colu,m
