@@ -1,15 +1,20 @@
 (defpackage snaky.operators
-  (:import-from :cl
-                :in-package
-                :defstruct
-                :defun
-                :&rest)
+  (:use :cl)
+  (:shadow :and 
+           :or
+           :*
+           :+
+           :class)
   (:export :and
            :and-expressions
            :or
            :or-expressions
            :str
            :str-string
+           :class
+           :class-negative
+           :class-chars
+           :class-ranges
            :any
            :repeat
            :repeat-expression
@@ -24,14 +29,21 @@
            :capture-expression))
 (in-package :snaky.operators)
 
-(defstruct and
+(cl:use-package :cl)
+
+(defstruct snaky.operators:and
   expressions)
 
-(defstruct or
+(defstruct snaky.operators:or
   expressions)
 
 (defstruct str
   string)
+
+(defstruct class
+  negative
+  chars
+  ranges)
 
 (defstruct any)
 
@@ -46,14 +58,36 @@
 (defstruct capture
   expression)
 
-(defun and (&rest expressions)
+(defun snaky.operators:and (&rest expressions)
   (make-and :expressions expressions))
 
-(defun or (&rest expressions)
+(defun snaky.operators:or (&rest expressions)
   (make-or :expressions expressions))
 
 (defun str (string)
   (make-str :string string))
+
+(defun class (string)
+  (cl:let ((i 0)
+        (negative nil)
+        (chars nil)
+        (ranges nil))
+    (when (eq (aref string i) #\^)
+      (incf i)
+      (setf negative t))
+    (loop
+      while (< i (- (length string) 2))
+      do (if (eq(aref string (1+ i)) #\-)
+             (progn
+               (push (cons (aref string i) (aref string (cl:+ i 2))) ranges)
+               (incf i 3))
+             (progn
+               (push (aref string i) chars)
+               (incf i))))
+    (loop
+      for i from i below (length string)
+      do (push (aref string i) chars))
+    (make-class :negative negative :chars chars :ranges ranges)))
 
 (defun any ()
   (make-any))
@@ -64,10 +98,10 @@
 (defun ? (expression)
   (make-repeat :expression expression :min nil :max 1))
 
-(defun * (expression)
+(defun snaky.operators:* (expression)
   (make-repeat :expression expression :min nil :max nil))
 
-(defun + (expression)
+(defun snaky.operators:+ (expression)
   (make-repeat :expression expression :min 1 :max nil))
 
 (defun call (symbol)

@@ -12,6 +12,7 @@
        (and (apply #'snaky.operators:and (mapcar #'read-expression (cdr exp))))
        (or (apply #'snaky.operators:or (mapcar #'read-expression (cdr exp))))
        (str (snaky.operators:str (second exp)))
+       (class (snaky.operators:class (second exp)))
        (any (snaky.operators:any))
        (repeat (snaky.operators:repeat (read-expression (second exp))
                                        (third exp) (fourth exp)))
@@ -49,6 +50,7 @@
          (capture (str "yo"))))
    (defrule fuga
      (capture (repeat (str "a") 2 4)))
+   (defrule cls (class "ab-cd"))
 
    (print (safe-parse 'start "yo"))
    (print (safe-parse 'start "aaaahoge"))
@@ -59,5 +61,10 @@
    (print (safe-parse 'fuga "aaa"))
    (print (safe-parse 'fuga "aaaa"))
    (print (safe-parse 'fuga "aaaaa"))
+   (print (safe-parse 'cls "a"))
+   (print (safe-parse 'cls "b"))
+   (print (safe-parse 'cls "c"))
+   (print (safe-parse 'cls "d"))
+   (print (safe-parse 'cls "e"))
 ))
-;; charactor-class & ! ` @ -> -? -| ~ \V $input $pos $row $colu,m
+;; charactor-class & ! @ -> -? -| ~ \V $input $pos $row $colu,m

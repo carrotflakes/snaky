@@ -56,6 +56,26 @@
            ,succ)
          ,fail)))
 
+(defmethod generate ((self snaky.operators:class) succ fail)
+  (let* ((negative (snaky.operators:class-negative self))
+         (chars (snaky.operators:class-chars self))
+         (ranges (snaky.operators:class-ranges self))
+         (conditions `(or ,@(mapcar (lambda (char) `(eq char ,char))
+                                    chars)
+                          ,@(mapcar (lambda (range) `(char<= ,(car range) char ,(cdr range)))
+                                    ranges)))
+         (condition (if negative
+                        `(not ,conditions)
+                        conditions)))
+    `(if (and (<= (1+ *pos*) *text-length*)
+              (let ((char (aref *text* *pos*)))
+                ,condition))
+         (progn
+           (incf *pos*)
+           ,succ)
+         ,fail)))
+    
+
 (defmethod generate ((self snaky.operators:any) succ fail)
   `(if (<= (1+ *pos*) *text-length*)
        (progn
