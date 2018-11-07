@@ -158,3 +158,18 @@
   `(progn
      (push ,(snaky.operators:ret-value self) values)
      ,succ))
+
+(defmethod generate ((self snaky.operators:->) succ fail)
+  (let ((values (gensym "VALUES")))
+    `(let ((,values values))
+       (setf values nil)
+       ,(generate (snaky.operators:->-expression self)
+                  `(progn
+                    (setf values
+                          (cons (apply ,(snaky.operators:->-function self)
+                                       values)
+                                ,values))
+                    ,succ)
+                  `(progn
+                     (setf values ,values)
+                     ,fail)))))

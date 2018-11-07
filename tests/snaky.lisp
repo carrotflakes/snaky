@@ -120,6 +120,14 @@
     '(1 2 1 2))
 
 
+(diag "->")
+
+(defrule -> (-> (-> (capture (repeat (any) 0 nil)) #'intern) (lambda (x) x)))
+
+(is (parse '-> "ABC")
+    'abc)
+
+
 (diag "cache")
 
 (defrule cache1 (and (ret 1) (ret 2) "a"))

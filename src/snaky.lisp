@@ -43,7 +43,9 @@
        ((string= (first exp) '@)
         (snaky.operators:@ (read-expression (second exp))))
        ((string= (first exp) 'ret)
-        (snaky.operators:ret (second exp))))) ;; TODO check argument length
+        (snaky.operators:ret (second exp)))
+       ((string= (first exp) '->)
+        (snaky.operators:-> (read-expression (second exp)) (third exp))))) ;; TODO check argument length
     (t
      (snaky.operators:call exp))))
 
@@ -84,4 +86,4 @@
           (first values)
           (error "parse failed")))))
 
-;; -> -? -| ~ \V $input $pos $row $colu,m
+;; -? -| ~ \V $input $pos $row $colu,m

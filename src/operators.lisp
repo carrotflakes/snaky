@@ -34,7 +34,10 @@
            :@
            :@-expression
            :ret
-           :ret-value))
+           :ret-value
+           :->
+           :->-expression
+           :->-function))
 (in-package :snaky.operators)
 
 (cl:use-package :cl)
@@ -77,6 +80,10 @@
 
 (defstruct ret
   value)
+
+(defstruct ->
+  expression
+  function)
 
 
 (defun snaky.operators:and (&rest expressions)
@@ -142,3 +149,6 @@
 
 (defun ret (value)
   (make-ret :value value))
+
+(defun -> (expression function)
+  (make--> :expression expression :function function))
