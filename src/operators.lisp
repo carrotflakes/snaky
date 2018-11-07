@@ -37,7 +37,8 @@
            :ret-value
            :->
            :->-expression
-           :->-function))
+           :->-function
+           :list-expressions))
 (in-package :snaky.operators)
 
 (cl:use-package :cl)
@@ -152,3 +153,13 @@
 
 (defun -> (expression function)
   (make--> :expression expression :function function))
+
+
+(defun list-expressions (exp)
+  (cons exp
+        (case (type-of exp)
+          ((snaky.operators:and snaky.operators:or)
+           (mapcan (lambda (exp) (list-expressions exp))
+                   (slot-value exp 'expressions)))
+          ((repeat capture & ! @ ->)
+           (list-expressions (slot-value exp 'expression))))))

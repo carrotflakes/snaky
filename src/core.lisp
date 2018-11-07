@@ -1,6 +1,9 @@
 (defpackage snaky.core
   (:use :cl
         :snaky.generate)
+  (:import-from :snaky.operators
+                :call
+                :list-expressions)
   (:export :*cache*
            :*rules*
            :build-parser-body))
@@ -35,11 +38,20 @@
                   (write-cache-fail ,name)
                   (return-from ,name nil)))))
 
+(defun rule-dependencies (name &optional dependencies)
+  (dolist (exp (list-expressions (gethash name *rules*)))
+    (when (typep exp 'call)
+      (let ((symbol (slot-value exp 'symbol)))
+        (unless (member symbol dependencies)
+          (setf dependencies (rule-dependencies symbol (cons symbol dependencies)))))))
+  dependencies)
+
 (defun build-parser-body (initial-rule text)
-  (let ((definitions nil))
-    (maphash (lambda (key value)
-               (push `(,key ,@(build-rule-definition key value)) definitions))
-             *rules*)
+  (let ((definitions
+            (mapcar
+             (lambda (name)
+               `(,name ,@(build-rule-definition name (gethash name *rules*))))
+             (cons initial-rule (rule-dependencies initial-rule)))))
     `(let* ((*text* ,text)
             (*text-length* (length *text*))
             (*cache* (make-hash-table :test 'equal)))
