@@ -1,11 +1,11 @@
 (defpackage snaky
   (:use :cl
-        :snaky.generate)
-  (:export :defrule
+        :snaky.core)
+  (:export :with-rules
+           :defrule
+           :defparser
            :parse))
 (in-package :snaky)
-
-(defvar *cache*)
 
 (defun read-expression (exp)
   (cond
@@ -49,41 +49,19 @@
     (t
      (snaky.operators:call exp))))
 
-(defmacro read-cache (name)
-  `(let ((cache (gethash (cons ',name pos*) *cache*)))
-     (when cache
-       (if (eq cache 'failed)
-           (return-from ,name nil)
-           (return-from ,name (values t (car cache) (cdr cache)))))))
-
-(defmacro write-cache-succ (name)
-  `(setf (gethash (cons ',name pos*) *cache*)
-         (cons pos values)))
-
-(defmacro write-cache-fail (name)
-  `(setf (gethash (cons ',name pos*) *cache*)
-         'failed))
+(defmacro with-rules (&body body)
+  `(let ((*rules* (make-hash-table :test 'eq)))
+     ,@body))
 
 (defmacro defrule (name exp)
-  `(defun ,name (pos &aux values (pos* pos))
-     (declare (optimize (speed 3) (space 0) (safety 2)))
-     (read-cache ,name)
-     ,(print (generate (read-expression exp)
-                       `(progn
-                          (write-cache-succ ,name)
-                          (return-from ,name (values t pos values)))
-                       `(progn
-                          (write-cache-fail ,name)
-                          (return-from ,name nil))))))
+  `(setf (gethash ',name *rules*) (read-expression ',exp)))
 
-(defun parse (name text)
-  (let ((*text* text)
-        (*text-length* (length text))
-        (*cache* (make-hash-table :test 'equal)))
-    (multiple-value-bind
-          (succ pos values) (funcall (symbol-function name) 0)
-      (if (and succ (= (length *text*) pos))
-          (first values)
-          (error "parse failed")))))
+(defmacro defparser (name rule)
+  `(defun ,name (text)
+     (declare (optimize (speed 3) (space 0) (safety 2)))
+     ,(build-parser-body rule 'text)))
+
+(defun parse (rule text)
+  (eval (build-parser-body rule text)))
 
 ;; -? -| ~ \V $input $pos $row $colu,m

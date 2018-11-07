@@ -14,7 +14,8 @@
   :depends-on ()
   :components ((:module "src"
                 :components
-                ((:file "snaky" :depends-on ("operators" "generate"))
+                ((:file "snaky" :depends-on ("core"))
+                 (:file "core" :depends-on ("generate"))
                  (:file "generate" :depends-on ("operators"))
                  (:file "operators"))))
   :description "PEG-based parser generator"
