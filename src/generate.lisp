@@ -167,7 +167,7 @@
                   `(progn
                     (setf values
                           (cons (apply ,(snaky.operators:->-function self)
-                                       values)
+                                       (reverse values))
                                 ,values))
                     ,succ)
                   `(progn
