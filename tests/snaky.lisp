@@ -138,6 +138,14 @@
     "fuga")
 
 
+(diag "wst")
+
+(defrule waste (@ (and (wst (ret 1)) (ret 2) (wst (ret 3)))))
+
+(is (parse 'waste "")
+    '(2))
+
+
 (diag "cache")
 
 (defrule cache1 (and (ret 1) (ret 2) "a"))

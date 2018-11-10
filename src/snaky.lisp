@@ -84,6 +84,10 @@
         (unless (= (length exp) 3)
           (error "`grp` operator taken 2 arguments"))
         (group (second exp) (read-expression (third exp))))
+       ((string= (first exp) 'wst)
+        (unless (= (length exp) 2)
+          (error "`wst` operator taken 1 arguments"))
+        (waste (read-expression (second exp))))
        (t
         (error "invalid rule form: ~s" exp))))
     ((symbolp exp)
@@ -108,4 +112,3 @@
 (defun parse (rule text)
   (eval (build-parser-body rule text)))
 
-;; -? -| ~

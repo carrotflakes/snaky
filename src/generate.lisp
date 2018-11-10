@@ -212,6 +212,15 @@
        (setf values ,values)
        ,fail)))
 
+(defmethod generate ((self waste) succ fail)
+  (let ((values (gensym "VALUES")))
+    `(let ((,values values))
+       ,(generate (waste-expression self)
+                  `(progn
+                     (setf values ,values)
+                     ,succ)
+                  fail))))
+
 (defmethod generate ((self group) succ fail)
   (let ((block (gensym "BLOCK")))
     `(progn

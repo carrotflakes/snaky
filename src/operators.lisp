@@ -44,6 +44,8 @@
            :guard
            :guard-expression
            :guard-function
+           :waste
+           :waste-expression
            :group
            :group-name
            :group-expression
@@ -99,6 +101,9 @@
 (defstruct guard
   expression
   function)
+
+(defstruct waste
+  expression)
 
 (defstruct group
   name
@@ -180,6 +185,9 @@
 
 (defun guard (expression function)
   (make-guard :expression expression :function function))
+
+(defun waste (expression)
+  (make-waste :expression expression))
 
 (defun group (name expression)
   (make-group :name name :expression expression))
