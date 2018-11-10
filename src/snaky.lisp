@@ -87,8 +87,11 @@
   `(let ((*rules* (make-hash-table :test 'eq)))
      ,@body))
 
-(defmacro defrule (name exp)
-  `(setf (gethash ',name *rules*) (read-expression ',exp)))
+(defmacro defrule (name exp &key matching-name)
+  `(setf (gethash ',name *rules*)
+         (make-rule :name ',name
+                    :expression (read-expression ',exp)
+                    :matching-name ,matching-name)))
 
 (defmacro defparser (name rule)
   `(defun ,name (text)

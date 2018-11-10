@@ -1,7 +1,12 @@
 (defpackage snaky.operators
   (:use :cl)
   (:shadow :copy-seq)
-  (:export :expression
+  (:export :rule
+           :make-rule
+           :rule-name
+           :rule-expression
+           :rule-matching-name
+           :expression
            :seq
            :seq-expressions
            :ordered-choice
@@ -9,6 +14,7 @@
            :str
            :str-string
            :charactor-class
+           :charactor-class-source
            :charactor-class-negative
            :charactor-class-chars
            :charactor-class-ranges
@@ -50,6 +56,7 @@
   string)
 
 (defstruct charactor-class
+  source
   negative
   chars
   ranges)
@@ -83,6 +90,12 @@
   expression
   function)
 
+(defstruct rule
+  name
+  expression
+  (matching-name nil)
+  (inline nil)) ; future work?
+
 
 (defun seq (&rest expressions)
   (make-seq :expressions expressions))
@@ -111,7 +124,10 @@
              (progn
                (push (aref string i) chars)
                (incf i))))
-    (make-charactor-class :negative negative :chars chars :ranges ranges)))
+    (make-charactor-class :source string
+                          :negative negative
+                          :chars chars
+                          :ranges ranges)))
 
 (defun any ()
   (make-any))

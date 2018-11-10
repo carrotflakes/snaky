@@ -4,12 +4,18 @@
   (:export :generate
            :*text*
            :*text-length*
+           :*failed-matches*
+           :*failed-pos*
+           :fail
            :pos
            :values))
 (in-package :snaky.generate)
 
 (defvar *text*)
 (defvar *text-length*)
+(defvar *failed-matches*)
+(defvar *failed-pos*)
+(defvar *notify-failure*)
 
 (defgeneric generate (operator succ fail))
 
@@ -53,7 +59,9 @@
          (progn
            (incf pos ,(length string))
            ,succ)
-         ,fail)))
+         (progn
+           (fail pos ,(format nil "~s" string))
+           ,fail))))
 
 (defmethod generate ((self charactor-class) succ fail)
   (let* ((negative (charactor-class-negative self))
@@ -72,14 +80,18 @@
          (progn
            (incf pos)
            ,succ)
-         ,fail)))
+         (progn
+           (fail pos ,(format nil "[~a]" (charactor-class-source self)))
+           ,fail))))
  
 (defmethod generate ((self any) succ fail)
   `(if (< pos *text-length*)
        (progn
          (incf pos)
          ,succ)
-       ,fail))
+       (progn
+         (fail pos ".")
+         ,fail)))
 
 (defmethod generate ((self repeat) succ fail)
   (let ((expression (repeat-expression self))
