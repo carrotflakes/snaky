@@ -43,7 +43,7 @@
        (if (and (zerop (repeat-min exp)) (eq property :progress))
            :stangnant
            property)))
-    ((capture & ! @ modify)
+    ((capture & ! @ modify group)
      (expression-left-recursive (slot-value exp 'expression)
                                 rule
                                 visited-rules))
@@ -148,7 +148,7 @@
             (*failed-matches* '())
             (*failed-pos* 0)
             (*cache* (make-hash-table :test 'equal))
-            (*undetermined* (make-array (length *text*)
+            (*undetermined* (make-array (1+ (length *text*))
                                         :element-type 'fixnum
                                         :initial-element 0)))
        (labels ,definitions

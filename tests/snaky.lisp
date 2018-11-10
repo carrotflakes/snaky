@@ -148,7 +148,7 @@
                             primary))
 (defrule primary (or int
                      (and "(" ws additive ws ")")))
-(defrule int (cap (and (? "-") (+ (cc "0-9")))))
+(defrule int (grp "integer" (cap (and (? "-") (+ (cc "0-9"))))))
 (defrule ws (* (cc " ")))
 
 (is (parse 'arithmetic "1 + 2 * (3 + 4 + 5) / 2")

@@ -17,7 +17,7 @@
 
 (defrule primary (or integer (and "(" ws additive ws ")")))
 
-(defrule integer (mod (cap (and (? "-") (+ (cc "0-9")))) #'parse-integer))
+(defrule integer (grp "integer" (mod (cap (and (? "-") (+ (cc "0-9")))) #'parse-integer)))
 
 (defrule ws (* (cc #.(format nil " ~a~a~a" #\cr #\lf #\tab))))
 

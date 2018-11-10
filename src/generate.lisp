@@ -186,3 +186,15 @@
                   `(progn
                      (setf values ,values)
                      ,fail)))))
+
+(defmethod generate ((self group) succ fail)
+  (let ((block (gensym "BLOCK")))
+    `(progn
+       (block ,block
+         (let ((*failed-pos* (1+ *text-length*)))
+           ,(generate (group-expression self)
+                      succ
+                      `(return-from ,block))))
+       (progn
+         (fail pos ',(group-name self))
+         ,fail))))

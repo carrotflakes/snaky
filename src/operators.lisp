@@ -41,6 +41,9 @@
            :modify
            :modify-expression
            :modify-function
+           :group
+           :group-name
+           :group-expression
            :list-expressions))
 (in-package :snaky.operators)
 
@@ -93,8 +96,11 @@
 (defstruct rule
   name
   expression
-  (matching-name nil)
   (inline nil)) ; future work?
+
+(defstruct group
+  name
+  expression)
 
 
 (defun seq (&rest expressions)
@@ -165,6 +171,9 @@
 (defun modify (expression function)
   (make-modify :expression expression :function function))
 
+(defun group (name expression)
+  (make-group :name name :expression expression))
+
 
 (defun list-expressions (exp)
   (cons exp
@@ -172,5 +181,5 @@
           ((seq ordered-choice)
            (mapcan (lambda (exp) (list-expressions exp))
                    (slot-value exp 'expressions)))
-          ((repeat capture & ! @ modify)
+          ((repeat capture & ! @ modify group)
            (list-expressions (slot-value exp 'expression))))))

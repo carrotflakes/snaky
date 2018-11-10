@@ -11,7 +11,7 @@
 (defrule name-separator (and ws ":" ws))
 (defrule value-separator (and ws "," ws))
 
-(defrule ws (* (cc #.(format nil " ~a~a~a" #\cr #\lf #\tab))))
+(defrule ws (grp "whitespace" (* (cc #.(format nil " ~a~a~a" #\cr #\lf #\tab)))))
 
 (defrule value
   (or false %null true object array number str))
@@ -34,8 +34,9 @@
        end-array))
 
 (defrule number
-  (mod (cap (and (? minus) int (? frac) (? %exp)))
-       #'read-from-string))
+    (grp "number"
+         (mod (cap (and (? minus) int (? frac) (? %exp)))
+              #'read-from-string)))
 
 (defrule decimal-point ".")
 (defrule digit1-9 (cc "1-9"))
@@ -48,9 +49,10 @@
 (defrule zero "0")
 
 (defrule str
-  (and quotation-mark
-       (mod (@ (* %char)) (lambda (x) (format nil "~{~a~}" x)))
-       quotation-mark))
+    (grp "string"
+         (and quotation-mark
+              (mod (@ (* %char)) (lambda (x) (format nil "~{~a~}" x)))
+              quotation-mark)))
 
 (defrule %char
   (or (cap unescaped)

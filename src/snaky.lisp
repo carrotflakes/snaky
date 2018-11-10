@@ -76,6 +76,10 @@
         (unless (= (length exp) 3)
           (error "`mod` operator taken 2 arguments"))
         (modify (read-expression (second exp)) (third exp)))
+       ((string= (first exp) 'grp)
+        (unless (= (length exp) 3)
+          (error "`grp` operator taken 2 arguments"))
+        (group (second exp) (read-expression (third exp))))
        (t
         (error "invalid rule form: ~s" exp))))
     ((symbolp exp)
@@ -87,11 +91,10 @@
   `(let ((*rules* (make-hash-table :test 'eq)))
      ,@body))
 
-(defmacro defrule (name exp &key matching-name)
+(defmacro defrule (name exp)
   `(setf (gethash ',name *rules*)
          (make-rule :name ',name
-                    :expression (read-expression ',exp)
-                    :matching-name ,matching-name)))
+                    :expression (read-expression ',exp))))
 
 (defmacro defparser (name rule)
   `(defun ,name (text)
