@@ -15,9 +15,10 @@
   :components ((:module "src"
                 :components
                 ((:file "snaky" :depends-on ("core"))
-                 (:file "core" :depends-on ("generate"))
+                 (:file "core" :depends-on ("generate" "util"))
                  (:file "generate" :depends-on ("operators"))
-                 (:file "operators"))))
+                 (:file "operators")
+                 (:file "util"))))
   :description "PEG-based parser generator"
   :long-description
   #.(read-file-string

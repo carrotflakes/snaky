@@ -1,7 +1,8 @@
 (defpackage snaky.core
   (:use :cl
         :snaky.operators
-        :snaky.generate)
+        :snaky.generate
+        :snaky.util)
   (:export :*cache*
            :*rules*
            :build-parser-body))
@@ -167,8 +168,11 @@
                          (prin1-to-string (subseq *text*
                                                   *failed-pos*
                                                   (1+ *failed-pos*))))))
-               (error "parse failed at ~a, expected ~{~a~^, ~} but ~a found."
-                      *failed-pos*
-                      *failed-matches*
-                      found)))
-           (first values))))))
+               (multiple-value-bind (line column)
+                   (string-line-column *text* *failed-pos*)
+                 (error "parse failed at line ~a column ~a: expected ~{~a~^, ~} but ~a found."
+                        line
+                        column
+                        *failed-matches*
+                        found))))
+             (first values))))))
