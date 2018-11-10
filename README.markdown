@@ -54,8 +54,9 @@ Parses `string` by rule `rule-name`.
 ```
 
 ## Installation
-1. Git clone the repository into ~/quicklisp/local-projects/
-1. (ql:quickload :snaky)
+```
+$ ros install carrotflakes/snaky
+```
 
 ## Author
 
