@@ -41,6 +41,9 @@
            :modify
            :modify-expression
            :modify-function
+           :guard
+           :guard-expression
+           :guard-function
            :group
            :group-name
            :group-expression
@@ -93,14 +96,18 @@
   expression
   function)
 
-(defstruct rule
-  name
+(defstruct guard
   expression
-  (inline nil)) ; future work?
+  function)
 
 (defstruct group
   name
   expression)
+
+(defstruct rule
+  name
+  expression
+  (inline nil)) ; future work?
 
 
 (defun seq (&rest expressions)
@@ -170,6 +177,9 @@
 
 (defun modify (expression function)
   (make-modify :expression expression :function function))
+
+(defun guard (expression function)
+  (make-guard :expression expression :function function))
 
 (defun group (name expression)
   (make-group :name name :expression expression))

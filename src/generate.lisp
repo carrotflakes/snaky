@@ -22,33 +22,41 @@
 (defmethod generate ((self seq) succ fail)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES"))
-        (block (gensym "BLOCK")))
-    `(block ,block
-       (let ((,pos pos)
-             (,values values))
+        (fail-tag (gensym "FAIL-TAG"))
+        (break-tag (gensym "BREAK-TAG")))
+    `(let ((,pos pos)
+           (,values values))
+       (tagbody
          ,(let ((succ `(progn
                          ,succ
-                         (return-from ,block))))
+                         (go ,break-tag))))
             (dolist (exp (reverse (seq-expressions self)))
-              (setf succ (generate exp succ nil)))
+              (setf succ (generate exp succ `(go ,fail-tag))))
             succ)
-         (setf pos ,pos values ,values))
-       ,fail)))
+         ,fail-tag
+         (setf pos ,pos values ,values)
+         ,fail
+         ,break-tag))))
 
 (defmethod generate ((self ordered-choice) succ fail)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES"))
-        (block (gensym "BLOCK")))
-    `(block ,block
-       (let ((,pos pos)
-             (,values values))
+        (succ-tag (gensym "SUCC-TAG"))
+        (break-tag (gensym "BREAK-TAG")))
+    `(let ((,pos pos)
+           (,values values))
+       (declare (ignorable ,pos ,values))
+       (tagbody
          ,(let ((fail `(progn
                          ,fail
-                         (setf pos ,pos values ,values))))
+                         (setf pos ,pos values ,values)
+                         (go ,break-tag))))
             (dolist (exp (reverse (ordered-choice-expressions self)))
-              (setf fail (generate exp nil fail)))
-            fail))
-       ,succ)))
+              (setf fail (generate exp `(go ,succ-tag) fail)))
+            fail)
+         ,succ-tag
+         ,succ
+         ,break-tag))))
 
 (defmethod generate ((self str) succ fail)
   (let ((string (str-string self)))
@@ -186,6 +194,23 @@
                   `(progn
                      (setf values ,values)
                      ,fail)))))
+
+(defmethod generate ((self guard) succ fail)
+  (let ((values (gensym "VALUES"))
+        (block (gensym "BLOCK")))
+    `(let ((,values values))
+       (block ,block
+         (setf values nil)
+         ,(generate (guard-expression self)
+                    `(cond
+                       ((apply ,(guard-function self) (reverse values))
+                        (setf values (concatenate 'list values ,values))
+                        ,succ)
+                       (t
+                        (return-from ,block)))
+                    `(return-from ,block)))
+       (setf values ,values)
+       ,fail)))
 
 (defmethod generate ((self group) succ fail)
   (let ((block (gensym "BLOCK")))

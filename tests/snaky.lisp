@@ -128,6 +128,16 @@
     'abc)
 
 
+(diag "grd")
+
+(defrule guard (or (grd (cap "hoge") (lambda (x) (string= x "hoge"))) (and (* (any)) (ret "fuga"))))
+
+(is (parse 'guard "hoge")
+    "hoge")
+(is (parse 'guard "piyo")
+    "fuga")
+
+
 (diag "cache")
 
 (defrule cache1 (and (ret 1) (ret 2) "a"))

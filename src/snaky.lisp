@@ -76,6 +76,10 @@
         (unless (= (length exp) 3)
           (error "`mod` operator taken 2 arguments"))
         (modify (read-expression (second exp)) (third exp)))
+       ((string= (first exp) 'grd)
+        (unless (= (length exp) 3)
+          (error "`grd` operator taken 2 arguments"))
+        (guard (read-expression (second exp)) (third exp)))
        ((string= (first exp) 'grp)
         (unless (= (length exp) 3)
           (error "`grp` operator taken 2 arguments"))
@@ -104,4 +108,4 @@
 (defun parse (rule text)
   (eval (build-parser-body rule text)))
 
-;; -? -| ~ \V $input $pos $row $colu,m
+;; -? -| ~

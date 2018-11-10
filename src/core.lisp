@@ -43,7 +43,7 @@
        (if (and (zerop (repeat-min exp)) (eq property :progress))
            :stangnant
            property)))
-    ((capture & ! @ modify group)
+    ((capture & ! @ modify guard group)
      (expression-left-recursive (slot-value exp 'expression)
                                 rule
                                 visited-rules))
