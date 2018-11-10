@@ -34,6 +34,7 @@ Parses `string` by rule `rule-name`.
 (and ...)
 (or ...)
 (str <string>)
+<string> ; Shorthand for (str <string>)
 (cc <string>) ; a.k.a. charactor class.
 (any)
 (rep <expression> min max)
@@ -43,7 +44,8 @@ Parses `string` by rule `rule-name`.
 (& <expression>)
 (! <expression>)
 (? <expression>)
-(call rule-name)
+(call <symbol>)
+<symbol> ; Shorthand for (call <symbol>)
 (cap <expression>) ; Substrings between <expression> and returns the string.
 (ret <form>) ; Returns the form constantly.
 (@ <expression>) ; Returns the values in <expression> as a list.
