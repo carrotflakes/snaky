@@ -1,28 +1,25 @@
 (defpackage snaky.operators
   (:use :cl)
-  (:shadow :and 
-           :or
-           :*
-           :+
-           :class)
-  (:export :and
-           :and-expressions
-           :or
-           :or-expressions
+  (:shadow :copy-seq)
+  (:export :expression
+           :seq
+           :seq-expressions
+           :ordered-choice
+           :ordered-choice-expressions
            :str
            :str-string
-           :class
-           :class-negative
-           :class-chars
-           :class-ranges
+           :charactor-class
+           :charactor-class-negative
+           :charactor-class-chars
+           :charactor-class-ranges
            :any
            :repeat
            :repeat-expression
            :repeat-min
            :repeat-max
            :?
-           :*
-           :+
+           :%*
+           :%+
            :call
            :call-symbol
            :capture
@@ -43,16 +40,16 @@
 
 (cl:use-package :cl)
 
-(defstruct snaky.operators:and
+(defstruct seq
   expressions)
 
-(defstruct snaky.operators:or
+(defstruct ordered-choice
   expressions)
 
 (defstruct str
   string)
 
-(defstruct class
+(defstruct charactor-class
   negative
   chars
   ranges)
@@ -87,16 +84,16 @@
   function)
 
 
-(defun snaky.operators:and (&rest expressions)
-  (make-and :expressions expressions))
+(defun seq (&rest expressions)
+  (make-seq :expressions expressions))
 
-(defun snaky.operators:or (&rest expressions)
-  (make-or :expressions expressions))
+(defun ordered-choice (&rest expressions)
+  (make-ordered-choice :expressions expressions))
 
 (defun str (string)
   (make-str :string string))
 
-(defun class (string)
+(defun charactor-class (string)
   (cl:let ((i 0)
         (negative nil)
         (chars nil)
@@ -105,32 +102,30 @@
       (incf i)
       (setf negative t))
     (loop
-      while (< i (- (length string) 2))
-      do (if (eq(aref string (1+ i)) #\-)
+      while (< i (length string))
+      do (if (and (< i (- (length string) 2))
+                  (eq (aref string (1+ i)) #\-))
              (progn
                (push (cons (aref string i) (aref string (cl:+ i 2))) ranges)
                (incf i 3))
              (progn
                (push (aref string i) chars)
                (incf i))))
-    (loop
-      for i from i below (length string)
-      do (push (aref string i) chars))
-    (make-class :negative negative :chars chars :ranges ranges)))
+    (make-charactor-class :negative negative :chars chars :ranges ranges)))
 
 (defun any ()
   (make-any))
 
 (defun repeat (expression min max)
-  (make-repeat :expression expression :min min :max max))
+  (make-repeat :expression expression :min (cl:or min 0) :max max))
 
 (defun ? (expression)
-  (make-repeat :expression expression :min nil :max 1))
+  (make-repeat :expression expression :min 0 :max 1))
 
-(defun snaky.operators:* (expression)
-  (make-repeat :expression expression :min nil :max nil))
+(defun %* (expression)
+  (make-repeat :expression expression :min 0 :max nil))
 
-(defun snaky.operators:+ (expression)
+(defun %+ (expression)
   (make-repeat :expression expression :min 1 :max nil))
 
 (defun call (symbol)
@@ -158,7 +153,7 @@
 (defun list-expressions (exp)
   (cons exp
         (case (type-of exp)
-          ((snaky.operators:and snaky.operators:or)
+          ((seq ordered-choice)
            (mapcan (lambda (exp) (list-expressions exp))
                    (slot-value exp 'expressions)))
           ((repeat capture & ! @ ->)

@@ -140,16 +140,18 @@
 (diag "arithmetic")
 
 (defrule arithmetic (and ws additive ws))
-(defrule additive (or (@ (and multiplicative ws (capture "+") ws additive))
+(defrule additive (or (@ (and additive ws (capture "+") ws multiplicative))
+                      (@ (and additive ws (capture "-") ws multiplicative))
                       multiplicative))
-(defrule multiplicative (or (@ (and primary ws (capture "*") ws multiplicative))
+(defrule multiplicative (or (@ (and multiplicative ws (capture "*") ws primary))
+                            (@ (and multiplicative ws (capture "/") ws primary))
                             primary))
 (defrule primary (or int
                      (and "(" ws additive ws ")")))
 (defrule int (capture (and (? "-") (+ (class "0-9")))))
 (defrule ws (* (class " ")))
 
-(is (parse 'arithmetic "1 + 2 * (3 + 4)")
-    '("1" "+" ("2" "*" ("3" "+" "4"))))
+(is (parse 'arithmetic "1 + 2 * (3 + 4 + 5) / 2")
+    '("1" "+" (("2" "*" (("3" "+" "4") "+" "5")) "/" "2")))
 
 (finalize)
