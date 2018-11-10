@@ -112,12 +112,15 @@
           (return-from ,name (values t (car cache) (cdr cache)))))))
 
 (defun rule-dependencies (name &optional dependencies)
-  (dolist (exp (list-expressions (gethash name *rules*)))
-    (when (typep exp 'call)
-      (let ((symbol (slot-value exp 'symbol)))
-        (unless (member symbol dependencies)
-          (setf dependencies (rule-dependencies symbol (cons symbol dependencies)))))))
-  dependencies)
+  (let ((root-exp (gethash name *rules*)))
+    (unless root-exp
+      (error "rule ~a is undefined" name))
+    (dolist (exp (list-expressions root-exp))
+      (when (typep exp 'call)
+        (let ((symbol (slot-value exp 'symbol)))
+          (unless (member symbol dependencies)
+            (setf dependencies (rule-dependencies symbol (cons symbol dependencies)))))))
+    dependencies))
 
 (defun build-parser-body (initial-rule text)
   (let ((definitions
