@@ -160,14 +160,14 @@
      (push ,(ret-value self) values)
      ,succ))
 
-(defmethod generate ((self ->) succ fail)
+(defmethod generate ((self modify) succ fail)
   (let ((values (gensym "VALUES")))
     `(let ((,values values))
        (setf values nil)
-       ,(generate (->-expression self)
+       ,(generate (modify-expression self)
                   `(progn
                     (setf values
-                          (cons (apply ,(->-function self)
+                          (cons (apply ,(modify-function self)
                                        (reverse values))
                                 ,values))
                     ,succ)

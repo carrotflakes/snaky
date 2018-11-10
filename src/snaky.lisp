@@ -20,13 +20,12 @@
         (apply #'ordered-choice (mapcar #'read-expression (cdr exp))))
        ((string= (first exp) 'str)
         (str (second exp)))
-       ((string= (first exp) 'class)
+       ((string= (first exp) 'cc)
         (charactor-class (second exp)))
        ((string= (first exp) 'any)
         (any))
-       ((string= (first exp) 'repeat)
-        (repeat (read-expression (second exp))
-                (third exp) (fourth exp)))
+       ((string= (first exp) 'rep)
+        (repeat (read-expression (second exp)) (third exp) (fourth exp)))
        ((string= (first exp) '?)
         (? (read-expression (second exp))))
        ((string= (first exp) '*)
@@ -35,7 +34,7 @@
         (%+ (read-expression (second exp))))
        ((string= (first exp) 'call)
         (call (second exp)))
-       ((string= (first exp) 'capture)
+       ((string= (first exp) 'cap)
         (capture (read-expression (second exp))))
        ((string= (first exp) '&)
         (& (read-expression (second exp))))
@@ -45,8 +44,8 @@
         (@ (read-expression (second exp))))
        ((string= (first exp) 'ret)
         (ret (second exp)))
-       ((string= (first exp) '->)
-        (-> (read-expression (second exp)) (third exp))))) ;; TODO check argument length
+       ((string= (first exp) 'mod)
+        (modify (read-expression (second exp)) (third exp))))) ;; TODO check argument length
     (t
      (call exp))))
 

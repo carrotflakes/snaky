@@ -25,21 +25,21 @@
 
 (diag "repeat")
 
-(defrule repeat (repeat (str "a") 1 2))
+(defrule rep (rep (str "a") 1 2))
 
-(is (parse 'repeat "a")
+(is (parse 'rep "a")
     'nil)
-(is (parse 'repeat "aa")
+(is (parse 'rep "aa")
     'nil)
-(is-error (parse 'repeat "")
+(is-error (parse 'rep "")
           'simple-error)
-(is-error (parse 'repeat "aaa")
+(is-error (parse 'rep "aaa")
           'simple-error)
 
 
 (diag "any")
 
-(defrule any (repeat (any) 1 2))
+(defrule any (rep (any) 1 2))
 
 (is (parse 'any "a")
     'nil)
@@ -49,41 +49,41 @@
 
 (diag "charactor-class")
 
-(defrule class1 (repeat (class "a1-3") 1 2))
-(defrule class2 (repeat (class "^a1-3") 1 2))
+(defrule cc1 (rep (cc "a1-3") 1 2))
+(defrule cc2 (rep (cc "^a1-3") 1 2))
 
-(is (parse 'class1 "a")
+(is (parse 'cc1 "a")
     'nil)
-(is (parse 'class1 "12")
+(is (parse 'cc1 "12")
     'nil)
-(is-error (parse 'class1 "b")
+(is-error (parse 'cc1 "b")
           'simple-error)
-(is-error (parse 'class1 "4")
+(is-error (parse 'cc1 "4")
           'simple-error)
-(is (parse 'class2 "b")
+(is (parse 'cc2 "b")
     'nil)
-(is (parse 'class2 "4")
+(is (parse 'cc2 "4")
     'nil)
-(is-error (parse 'class2 "a")
+(is-error (parse 'cc2 "a")
           'simple-error)
-(is-error (parse 'class2 "12")
+(is-error (parse 'cc2 "12")
           'simple-error)
 
 
 (diag "capture")
 
-(defrule capture (capture (repeat (any) 1 2)))
+(defrule cap (cap (rep (any) 1 2)))
 
-(is (parse 'capture "a")
+(is (parse 'cap "a")
     "a")
-(is (parse 'capture "ab")
+(is (parse 'cap "ab")
     "ab")
 
 
 (diag "lookahead")
 
-(defrule pla (and (& (class "a-d")) (any)))
-(defrule nla (and (! (class "a-d")) (any)))
+(defrule pla (and (& (cc "a-d")) (any)))
+(defrule nla (and (! (cc "a-d")) (any)))
 
 (is (parse 'pla "a")
     'nil)
@@ -120,11 +120,11 @@
     '(1 2 1 2))
 
 
-(diag "->")
+(diag "mod")
 
-(defrule -> (-> (-> (capture (repeat (any) 0 nil)) #'intern) (lambda (x) x)))
+(defrule modify (mod (mod (cap (rep (any) 0 nil)) #'intern) (lambda (x) x)))
 
-(is (parse '-> "ABC")
+(is (parse 'modify "ABC")
     'abc)
 
 
@@ -140,16 +140,16 @@
 (diag "arithmetic")
 
 (defrule arithmetic (and ws additive ws))
-(defrule additive (or (@ (and additive ws (capture "+") ws multiplicative))
-                      (@ (and additive ws (capture "-") ws multiplicative))
+(defrule additive (or (@ (and additive ws (cap "+") ws multiplicative))
+                      (@ (and additive ws (cap "-") ws multiplicative))
                       multiplicative))
-(defrule multiplicative (or (@ (and multiplicative ws (capture "*") ws primary))
-                            (@ (and multiplicative ws (capture "/") ws primary))
+(defrule multiplicative (or (@ (and multiplicative ws (cap "*") ws primary))
+                            (@ (and multiplicative ws (cap "/") ws primary))
                             primary))
 (defrule primary (or int
                      (and "(" ws additive ws ")")))
-(defrule int (capture (and (? "-") (+ (class "0-9")))))
-(defrule ws (* (class " ")))
+(defrule int (cap (and (? "-") (+ (cc "0-9")))))
+(defrule ws (* (cc " ")))
 
 (is (parse 'arithmetic "1 + 2 * (3 + 4 + 5) / 2")
     '("1" "+" (("2" "*" (("3" "+" "4") "+" "5")) "/" "2")))

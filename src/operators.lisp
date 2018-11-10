@@ -32,9 +32,9 @@
            :@-expression
            :ret
            :ret-value
-           :->
-           :->-expression
-           :->-function
+           :modify
+           :modify-expression
+           :modify-function
            :list-expressions))
 (in-package :snaky.operators)
 
@@ -79,7 +79,7 @@
 (defstruct ret
   value)
 
-(defstruct ->
+(defstruct modify
   expression
   function)
 
@@ -146,8 +146,8 @@
 (defun ret (value)
   (make-ret :value value))
 
-(defun -> (expression function)
-  (make--> :expression expression :function function))
+(defun modify (expression function)
+  (make-modify :expression expression :function function))
 
 
 (defun list-expressions (exp)
@@ -156,5 +156,5 @@
           ((seq ordered-choice)
            (mapcan (lambda (exp) (list-expressions exp))
                    (slot-value exp 'expressions)))
-          ((repeat capture & ! @ ->)
+          ((repeat capture & ! @ modify)
            (list-expressions (slot-value exp 'expression))))))
