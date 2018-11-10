@@ -83,4 +83,8 @@
 (print (parse-json "[true]"))
 (print (parse-json "[true, 1, 1.0, -1e-10]"))
 (print (parse-json "{}"))
-(print (parse-json "[{\"name\": \"foo\", \"age\": 20}]"))
+(print (parse-json "[{\"name\": \"foo\", \"age\": 20}, {\"name\": \"bar\", \"age\": 30}]"))
+(time (parse-json #.(format nil "[~{~a~^, ~}]"
+                            (loop
+                              repeat 10000
+                              collect "{\"name\": \"foo\", \"age\": 20}"))))
