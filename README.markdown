@@ -41,9 +41,8 @@ Parses `string` by rule `rule-name`.
 (? <expression>)
 (* <expression>)
 (+ <expression>)
-(& <expression>)
-(! <expression>)
-(? <expression>)
+(& <expression>) ; Positive lookahead
+(! <expression>) ; Negative lookahead
 (call <symbol>)
 <symbol> ; Shorthand for (call <symbol>)
 (cap <expression>) ; Substrings between <expression> and returns the string.
