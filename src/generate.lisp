@@ -105,6 +105,13 @@
   (let ((expression (repeat-expression self))
         (min (repeat-min self))
         (max (repeat-max self)))
+    (when (and (null min) (= max 1))
+      (return-from generate
+        (let ((block (gensym "BLOCK")))
+          `(progn
+             (block ,block
+               (generate expression '(return-from ,block) '(return-from ,block)))
+             ,succ))))
     (let ((pos (gensym "POS"))
           (values (gensym "VALUES"))
           (block (gensym "BLOCK"))
