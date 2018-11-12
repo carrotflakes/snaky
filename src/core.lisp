@@ -152,6 +152,7 @@
             (*undetermined* (make-array (1+ (length *text*))
                                         :element-type 'fixnum
                                         :initial-element 0)))
+       (declare (type string *text*))
        (labels ,definitions
          (multiple-value-bind (succ pos values)
              (,rule-name 0)
