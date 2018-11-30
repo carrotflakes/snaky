@@ -111,4 +111,3 @@
 
 (defun parse (rule text)
   (eval (build-parser-body rule text)))
-

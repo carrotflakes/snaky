@@ -1,7 +1,8 @@
 (defpackage snaky.generate
   (:use :cl
         :snaky.operators)
-  (:export :generate
+  (:export :fixnum-+
+           :generate
            :*text*
            :*text-length*
            :*failed-matches*
@@ -10,6 +11,10 @@
            :pos
            :values))
 (in-package :snaky.generate)
+
+(defmacro fixnum-+ (x y)
+  `(locally (declare (optimize (safety 0)))
+     (the fixnum (+ ,x ,y))))
 
 (defvar *text*)
 (defvar *text-length*)
@@ -24,7 +29,7 @@
         (values (gensym "VALUES"))
         (fail-tag (gensym "FAIL-TAG"))
         (break-tag (gensym "BREAK-TAG")))
-    `(let ((,pos pos)
+    `(let ((,pos (the fixnum pos))
            (,values values))
        (tagbody
          ,(let ((succ `(progn
@@ -43,7 +48,7 @@
         (values (gensym "VALUES"))
         (succ-tag (gensym "SUCC-TAG"))
         (break-tag (gensym "BREAK-TAG")))
-    `(let ((,pos pos)
+    `(let ((,pos (the fixnum pos))
            (,values values))
        (declare (ignorable ,pos ,values))
        (tagbody
@@ -60,12 +65,12 @@
 
 (defmethod generate ((self str) succ fail)
   (let ((string (str-string self)))
-    `(if (and (<= (+ pos ,(length string)) *text-length*)
+    `(if (and (<= (fixnum-+ pos ,(length string)) *text-length*)
               (string= *text* ,string
                        :start1 pos
-                       :end1 (+ pos ,(length string))))
+                       :end1 (fixnum-+ pos ,(length string))))
          (progn
-           (incf pos ,(length string))
+           (setf pos (fixnum-+ pos ,(length string)))
            ,succ)
          (progn
            (fail pos ,(format nil "~s" string))
@@ -83,10 +88,10 @@
                         `(not ,conditions)
                         conditions)))
     `(if (and (< pos *text-length*)
-              (let ((char (aref *text* pos)))
+              (let ((char (schar *text* pos)))
                 ,condition))
          (progn
-           (incf pos)
+           (setf pos (fixnum-+ pos 1))
            ,succ)
          (progn
            (fail pos ,(format nil "[~a]" (charactor-class-source self)))
@@ -95,7 +100,7 @@
 (defmethod generate ((self any) succ fail)
   `(if (< pos *text-length*)
        (progn
-         (incf pos)
+         (setf pos (fixnum-+ pos 1))
          ,succ)
        (progn
          (fail pos ".")
@@ -116,10 +121,11 @@
           (values (gensym "VALUES"))
           (block (gensym "BLOCK"))
           (i (gensym "I")))
-      `(let ((,pos pos)
+      `(let ((,pos (the fixnum pos))
              (,values values))
          (if (loop
-               named ,block for ,i from 0 ,@(if max `(below ,max) '())
+               named ,block
+               for ,i fixnum from 0 ,@(if max `(below ,max) '())
                do ,(generate expression
                              nil
                              `(return-from ,block ,(if min `(<= ,min ,i) 't)))
@@ -151,7 +157,7 @@
 (defmethod generate ((self &) succ fail)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES")))
-    `(let ((,pos pos)
+    `(let ((,pos (the fixnum pos))
            (,values values))
        ,(generate (&-expression self)
                   `(progn
@@ -232,7 +238,7 @@
   (let ((block (gensym "BLOCK")))
     `(progn
        (block ,block
-         (let ((*failed-pos* (1+ *text-length*)))
+         (let ((*failed-pos* (fixnum-+ *text-length* 1)))
            ,(generate (group-expression self)
                       succ
                       `(return-from ,block))))
