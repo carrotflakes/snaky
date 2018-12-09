@@ -105,9 +105,9 @@
                     :expression (read-expression ',exp))))
 
 (defmacro defparser (name rule)
-  `(defun ,name (text)
-     (declare (optimize (speed 3) (space 0) (safety 2)))
-     ,(build-parser-body rule 'text)))
+  `(eval (list 'defun ',name '(text)
+               '(declare (optimize (speed 3) (space 0) (safety 2)))
+               (build-parser-body ',rule 'text))))
 
 (defun parse (rule text)
   (eval (build-parser-body rule text)))
