@@ -4,9 +4,12 @@
   (:export :rule
            :make-rule
            :rule-name
+           :rule-parameters
            :rule-expression
+           :rule-inline
            :rule-matching-name
            :expression
+           :expressions
            :seq
            :seq-expressions
            :ordered-choice
@@ -28,6 +31,7 @@
            :%+
            :call
            :call-symbol
+           :call-arguments
            :capture
            :capture-expression
            :&
@@ -49,7 +53,8 @@
            :group
            :group-name
            :group-expression
-           :list-expressions))
+           :list-expressions
+           :copy-expression))
 (in-package :snaky.operators)
 
 (cl:use-package :cl)
@@ -77,7 +82,8 @@
   max)
 
 (defstruct call
-  symbol)
+  symbol
+  arguments)
 
 (defstruct capture
   expression)
@@ -111,8 +117,9 @@
 
 (defstruct rule
   name
+  parameters
   expression
-  (inline nil)) ; future work?
+  (inline nil))
 
 
 (defun seq (&rest expressions)
@@ -162,8 +169,8 @@
 (defun %+ (expression)
   (make-repeat :expression expression :min 1 :max nil))
 
-(defun call (symbol)
-  (make-call :symbol symbol))
+(defun call (symbol &optional arguments)
+  (make-call :symbol symbol :arguments arguments))
 
 (defun capture (expression)
   (make-capture :expression expression))
@@ -201,3 +208,13 @@
                    (slot-value exp 'expressions)))
           ((repeat capture & ! @ modify group)
            (list-expressions (slot-value exp 'expression))))))
+
+(defun copy-expression (exp)
+  (setf exp (copy-structure exp))
+  (when (slot-exists-p exp 'expressions)
+    (setf (slot-value exp 'expressions)
+          (mapcar #'copy-expression (slot-value exp 'expressions))))
+  (when (slot-exists-p exp 'expression)
+    (setf (slot-value exp 'expression)
+          (copy-expression (slot-value exp 'expression))))
+  exp)

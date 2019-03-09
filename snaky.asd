@@ -15,7 +15,13 @@
   :components ((:module "src"
                 :components
                 ((:file "snaky" :depends-on ("core"))
-                 (:file "core" :depends-on ("generate" "util"))
+                 (:file "core"
+                  :depends-on ("generate"
+                               "util"
+                               "left-recursion-check"
+                               "rule-reconstruct"))
+                 (:file "left-recursion-check" :depends-on ("operators"))
+                 (:file "rule-reconstruct" :depends-on ("operators"))
                  (:file "generate" :depends-on ("operators"))
                  (:file "operators")
                  (:file "util"))))

@@ -2,7 +2,9 @@
   (:use :cl
         :snaky.operators
         :snaky.generate
-        :snaky.util)
+        :snaky.util
+        :snaky.left-recursion-check
+        :snaky.rule-reconstruct)
   (:export :*cache*
            :*rules*
            :build-parser-body))
@@ -11,58 +13,6 @@
 (defvar *cache*)
 (defvar *undetermined*)
 (defvar *rules* (make-hash-table :test 'eq))
-
-(defun expression-left-recursive (exp rule &optional visited-rules)
-  (ecase (type-of exp)
-    ((seq)
-     (loop
-       for exp in (seq-expressions exp)
-       for property = (expression-left-recursive exp rule visited-rules)
-       when (member property '(:progressive :left-recursive))
-       return property))
-    ((ordered-choice)
-     (let ((property :progressive))
-       (loop
-         for exp in (ordered-choice-expressions exp)
-         for property* = (expression-left-recursive exp rule visited-rules)
-         when (eq property* :left-recursive)
-         do (setf property :left-recursive)
-         when (and (eq property* :stagnant) (eq property :progressive))
-         do (setf property :stagnant))
-       property))
-    ((str)
-     (if (zerop (length (str-string exp)))
-         :stagnant
-         :progressive))
-    ((charactor-class any)
-     :progressive)
-    ((repeat)
-     (let ((property
-             (expression-left-recursive (slot-value exp 'expression)
-                                        rule
-                                        visited-rules)))
-       (if (and (zerop (repeat-min exp)) (eq property :progress))
-           :stangnant
-           property)))
-    ((capture & ! @ modify guard waste group)
-     (expression-left-recursive (slot-value exp 'expression)
-                                rule
-                                visited-rules))
-    ((call)
-     (let ((symbol (call-symbol exp)))
-       (cond
-         ((eq rule symbol)
-          :left-recursive)
-         ((member symbol visited-rules)
-          :stagnant)
-         (t
-          (expression-left-recursive (rule-expression (gethash symbol *rules*))
-                                     rule
-                                     (cons symbol visited-rules))))))
-    ((ret))))
-
-(defun rule-left-recursive (rule)
-  (expression-left-recursive (rule-expression rule) (rule-name rule)))
 
 (defun build-read-cache (name)
   `(let ((cache (gethash (cons ',name origin-pos) *cache*)))
@@ -76,7 +26,7 @@
          ,form))
 
 (defun build-rule-definition (rule)
-  (when (eq (rule-left-recursive rule) :left-recursive)
+  (when (eq (rule-left-recursive rule *rules*) :left-recursive)
     (return-from build-rule-definition
       (build-rule-definition-allow-left-recursion rule)))
   (let ((name (rule-name rule))
@@ -124,23 +74,13 @@
                   (return-from ,name (values nil 0 nil))
                   (return-from ,name (values t (car cache) (cdr cache))))))))
 
-(defun rule-dependencies (name &optional dependencies)
-  (let ((rule (gethash name *rules*)))
-    (unless rule
-      (error "rule ~a is undefined" name))
-    (dolist (exp (list-expressions (rule-expression rule)))
-      (when (typep exp 'call)
-        (let ((symbol (slot-value exp 'symbol)))
-          (unless (member symbol dependencies)
-            (setf dependencies (rule-dependencies symbol (cons symbol dependencies)))))))
-    dependencies))
-
 (defun build-parser-body (rule-name text)
-  (let ((definitions
-            (mapcar
-             (lambda (name)
-               (build-rule-definition (gethash name *rules*)))
-             (cons rule-name (rule-dependencies rule-name)))))
+  (let ((*rules* (rule-reconstruct rule-name *rules*))
+        (definitions '()))
+    (maphash (lambda (key value)
+               (declare (ignore key))
+               (push (build-rule-definition value) definitions))
+             *rules*)
     (push '(fail (pos match)
             (cond
               ((< *failed-pos* pos)

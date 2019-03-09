@@ -120,6 +120,21 @@
     '(1 2 1 2))
 
 
+(diag "call with arguments")
+
+(defrule (with-args1 a) (and (ret 1) a))
+(defrule call3 (with-args1 "yo"))
+
+(is (parse 'call3 "yo")
+    '1)
+
+(defrule (with-args2 a b) (or (and a (with-args2 b a)) ""))
+(defrule call4 (@ (with-args2 (cap "a") (cap "b"))))
+
+(is (parse 'call4 "ababa")
+    '("a" "b" "a" "b" "a"))
+
+
 (diag "mod")
 
 (defrule modify (mod (mod (cap (rep (any) 0 nil)) #'intern) (lambda (x) x)))
