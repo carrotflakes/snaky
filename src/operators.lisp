@@ -131,11 +131,37 @@
 (defun str (string)
   (make-str :string string))
 
+(defun parse-hex (string)
+  (handler-bind ((error (lambda (c) (declare (ignore c)) (return-from parse-hex))))
+    (parse-integer string :radix 16)))
+
 (defun character-class (string)
+  (setf string
+        (concatenate
+         'string
+         (loop
+           with i = 0
+           while (< i (length string))
+           collect (cond
+                     ((and (<= 6 (- (length string) i))
+                           (char= (char string i) #\backslash)
+                           (char= (char string (+ i 1)) #\u)
+                           (parse-hex (subseq string (+ i 2) (+ i 6))))
+                      (incf i 6)
+                      (code-char (parse-hex (subseq string (- i 4) i))))
+                     ((and (<= 4 (- (length string) i))
+                           (char= (char string i) #\backslash)
+                           (char= (char string (+ i 1)) #\x)
+                           (parse-hex (subseq string (+ i 2) (+ i 4))))
+                      (incf i 4)
+                      (code-char (parse-hex (subseq string (- i 2) i))))
+                     (t
+                      (incf i)
+                      (char string (1- i)))))))
   (cl:let ((i 0)
-        (negative nil)
-        (chars nil)
-        (ranges nil))
+           (negative nil)
+           (chars nil)
+           (ranges nil))
     (when (eq (aref string i) #\^)
       (incf i)
       (setf negative t))

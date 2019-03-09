@@ -51,6 +51,7 @@
 
 (defrule cc1 (rep (cc "a1-3") 1 2))
 (defrule cc2 (rep (cc "^a1-3") 1 2))
+(defrule cc3 (cc "\\u0030\\x31"))
 
 (is (parse 'cc1 "a")
     'nil)
@@ -68,6 +69,10 @@
           'simple-error)
 (is-error (parse 'cc2 "12")
           'simple-error)
+(is (parse 'cc3 "0")
+    'nil)
+(is (parse 'cc3 "1")
+    'nil)
 
 
 (diag "capture")
