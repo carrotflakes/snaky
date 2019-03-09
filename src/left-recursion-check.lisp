@@ -28,7 +28,7 @@
      (if (zerop (length (str-string exp)))
          :stagnant
          :progressive))
-    ((charactor-class any)
+    ((character-class any)
      :progressive)
     ((repeat)
      (let ((property

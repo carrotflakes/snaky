@@ -16,11 +16,11 @@
            :ordered-choice-expressions
            :str
            :str-string
-           :charactor-class
-           :charactor-class-source
-           :charactor-class-negative
-           :charactor-class-chars
-           :charactor-class-ranges
+           :character-class
+           :character-class-source
+           :character-class-negative
+           :character-class-chars
+           :character-class-ranges
            :any
            :repeat
            :repeat-expression
@@ -68,7 +68,7 @@
 (defstruct str
   string)
 
-(defstruct charactor-class
+(defstruct character-class
   source
   negative
   chars
@@ -131,7 +131,7 @@
 (defun str (string)
   (make-str :string string))
 
-(defun charactor-class (string)
+(defun character-class (string)
   (cl:let ((i 0)
         (negative nil)
         (chars nil)
@@ -149,7 +149,7 @@
              (progn
                (push (aref string i) chars)
                (incf i))))
-    (make-charactor-class :source string
+    (make-character-class :source string
                           :negative negative
                           :chars chars
                           :ranges ranges)))

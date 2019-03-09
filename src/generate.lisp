@@ -76,10 +76,10 @@
            (fail pos ,(format nil "~s" string))
            ,fail))))
 
-(defmethod generate ((self charactor-class) succ fail)
-  (let* ((negative (charactor-class-negative self))
-         (chars (charactor-class-chars self))
-         (ranges (charactor-class-ranges self))
+(defmethod generate ((self character-class) succ fail)
+  (let* ((negative (character-class-negative self))
+         (chars (character-class-chars self))
+         (ranges (character-class-ranges self))
          (conditions `(or ,@(mapcar (lambda (char) `(eq char ,char))
                                     chars)
                           ,@(mapcar (lambda (range) `(char<= ,(car range) char ,(cdr range)))
@@ -94,7 +94,7 @@
            (setf pos (fixnum-+ pos 1))
            ,succ)
          (progn
-           (fail pos ,(format nil "[~a]" (charactor-class-source self)))
+           (fail pos ,(format nil "[~a]" (character-class-source self)))
            ,fail))))
  
 (defmethod generate ((self any) succ fail)

@@ -27,7 +27,7 @@
        ((string= (first exp) 'cc)
         (unless (= (length exp) 2)
           (error "`cc` operator takes 1 arguments"))
-        (charactor-class (second exp)))
+        (character-class (second exp)))
        ((string= (first exp) 'any)
         (unless (= (length exp) 1)
           (error "`any` operator takes no argument"))

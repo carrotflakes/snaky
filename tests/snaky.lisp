@@ -47,7 +47,7 @@
     'nil)
 
 
-(diag "charactor-class")
+(diag "character-class")
 
 (defrule cc1 (rep (cc "a1-3") 1 2))
 (defrule cc2 (rep (cc "^a1-3") 1 2))
