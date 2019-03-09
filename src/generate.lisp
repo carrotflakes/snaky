@@ -80,8 +80,7 @@
   (let* ((negative (character-class-negative self))
          (chars (character-class-chars self))
          (ranges (character-class-ranges self))
-         (conditions `(or ,@(mapcar (lambda (char) `(eq char ,char))
-                                    chars)
+         (conditions `(or (member char ',chars :test 'char=)
                           ,@(mapcar (lambda (range) `(char<= ,(car range) char ,(cdr range)))
                                     ranges)))
          (condition (if negative
