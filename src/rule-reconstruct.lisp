@@ -16,7 +16,9 @@
                   (key (cons name arguments))
                   (new-name (or (gethash key rule-name-map)
                                 (setf (gethash key rule-name-map)
-                                      (if arguments (gensym (symbol-name name)) name)))))
+                                      (if (or arguments (special-operator-p name))
+                                          (gensym (symbol-name name))
+                                          name)))))
              (when (/= (length parameters) (length arguments))
                (error "rule ~a takes ~a arguments (given ~a)"
                       name (length parameters) (length arguments)))

@@ -192,4 +192,11 @@
 (is (parse 'arithmetic "1 + 2 * (3 + 4 + 5) / 2")
     '("1" "+" (("2" "*" (("3" "+" "4") "+" "5")) "/" "2")))
 
+(diag "special operator name")
+
+(defrule block "blocked by block!")
+
+(is (parse 'block "blocked by block!")
+    'nil)
+
 (finalize)
