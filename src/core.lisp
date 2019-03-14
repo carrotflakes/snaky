@@ -37,10 +37,9 @@
             ,(generate exp
                        `(progn
                           ,(build-write-cache name '(cons pos values))
-                          (return-from ,name (values t pos values)))
-                       `(progn
-                          ,(build-write-cache name ''failed)
-                          (return-from ,name (values nil 0 nil)))))))
+                          (return-from ,name (values t pos values))))
+            ,(build-write-cache name ''failed)
+            (return-from ,name (values nil 0 nil)))))
 
 (defun build-rule-definition-allow-left-recursion (rule)
   (let ((name (rule-name rule))
@@ -61,8 +60,8 @@
                      ,(generate exp
                                 '(if (<= pos last-pos)
                                   (return-from loop)
-                                  (return-from body))
-                                '(return-from loop)))
+                                  (return-from body)))
+                     (return-from loop))
                    (setf last-pos pos)
                    ,(build-write-cache name '(cons pos values))))
             (let ((cache (gethash (cons ',name origin-pos) *cache*)))

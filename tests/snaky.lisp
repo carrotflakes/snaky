@@ -36,6 +36,33 @@
 (is-error (parse 'rep "aaa")
           'simple-error)
 
+(defrule rep* (* (str "*")))
+
+(is (parse 'rep* "")
+    'nil)
+(is (parse 'rep* "*")
+    'nil)
+(is (parse 'rep* "**")
+    'nil)
+
+(defrule rep+ (+ (str "+")))
+
+(is (parse 'rep+ "+")
+    'nil)
+(is (parse 'rep+ "++")
+    'nil)
+(is-error (parse 'rep+ "")
+          'simple-error)
+
+(defrule rep? (? (str "?")))
+
+(is (parse 'rep? "")
+    'nil)
+(is (parse 'rep? "?")
+    'nil)
+(is-error (parse 'rep? "??")
+          'simple-error)
+
 
 (diag "any")
 

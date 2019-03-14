@@ -22,48 +22,37 @@
 (defvar *failed-pos*)
 (defvar *notify-failure*)
 
-(defgeneric generate (operator succ fail))
+(defgeneric generate (operator succ))
 
-(defmethod generate ((self seq) succ fail)
+(defmethod generate ((self seq) succ)
   (let ((pos (gensym "POS"))
-        (values (gensym "VALUES"))
-        (fail-tag (gensym "FAIL-TAG"))
-        (break-tag (gensym "BREAK-TAG")))
+        (values (gensym "VALUES")))
+    (dolist (exp (reverse (seq-expressions self)))
+      (setf succ (generate exp succ)))
     `(let ((,pos (the fixnum pos))
            (,values values))
-       (tagbody
-         ,(let ((succ `(progn
-                         ,succ
-                         (go ,break-tag))))
-            (dolist (exp (reverse (seq-expressions self)))
-              (setf succ (generate exp succ `(go ,fail-tag))))
-            succ)
-         ,fail-tag
-         (setf pos ,pos values ,values)
-         ,fail
-         ,break-tag))))
+       ,succ
+       (setf pos ,pos values ,values))))
 
-(defmethod generate ((self ordered-choice) succ fail)
+(defmethod generate ((self ordered-choice) succ)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES"))
         (succ-tag (gensym "SUCC-TAG"))
-        (break-tag (gensym "BREAK-TAG")))
+        (fail-tag (gensym "FAIL-TAG")))
     `(let ((,pos (the fixnum pos))
            (,values values))
        (declare (ignorable ,pos ,values))
        (tagbody
-         ,(let ((fail `(progn
-                         ,fail
-                         (setf pos ,pos values ,values)
-                         (go ,break-tag))))
-            (dolist (exp (reverse (ordered-choice-expressions self)))
-              (setf fail (generate exp `(go ,succ-tag) fail)))
-            fail)
+         ,@(loop
+             for exp in (ordered-choice-expressions self)
+             collect (generate exp `(go ,succ-tag)))
+         (go ,fail-tag)
          ,succ-tag
          ,succ
-         ,break-tag))))
+         ,fail-tag
+         (setf pos ,pos values ,values)))))
 
-(defmethod generate ((self str) succ fail)
+(defmethod generate ((self str) succ)
   (let ((string (str-string self)))
     `(if (and (<= (fixnum-+ pos ,(length string)) *text-length*)
               (string= *text* ,string
@@ -72,11 +61,9 @@
          (progn
            (setf pos (fixnum-+ pos ,(length string)))
            ,succ)
-         (progn
-           (fail pos ,(format nil "~s" string))
-           ,fail))))
+         (fail pos ,(format nil "~s" string)))))
 
-(defmethod generate ((self character-class) succ fail)
+(defmethod generate ((self character-class) succ)
   (let* ((negative (character-class-negative self))
          (chars (character-class-chars self))
          (ranges (character-class-ranges self))
@@ -92,68 +79,77 @@
          (progn
            (setf pos (fixnum-+ pos 1))
            ,succ)
-         (progn
-           (fail pos ,(format nil "[~a]" (character-class-source self)))
-           ,fail))))
- 
-(defmethod generate ((self any) succ fail)
+         (fail pos ,(format nil "[~a]" (character-class-source self))))))
+
+(defmethod generate ((self any) succ)
   `(if (< pos *text-length*)
        (progn
          (setf pos (fixnum-+ pos 1))
          ,succ)
-       (progn
-         (fail pos ".")
-         ,fail)))
+       (fail pos ".")))
 
-(defmethod generate ((self repeat) succ fail)
+(defmethod generate ((self repeat) succ)
   (let ((expression (repeat-expression self))
         (min (repeat-min self))
         (max (repeat-max self)))
-    (when (and (null min) (= max 1))
-      (return-from generate
-        (let ((block (gensym "BLOCK")))
-          `(progn
-             (block ,block
-               (generate expression '(return-from ,block) '(return-from ,block)))
-             ,succ))))
-    (let ((pos (gensym "POS"))
-          (values (gensym "VALUES"))
-          (block (gensym "BLOCK"))
-          (i (gensym "I")))
-      `(let ((,pos (the fixnum pos))
-             (,values values))
-         (if (loop
-               named ,block
-               for ,i fixnum from 0 ,@(if max `(below ,max) '())
-               do ,(generate expression
-                             nil
-                             `(return-from ,block ,(if min `(<= ,min ,i) 't)))
-               finally (return-from ,block t))
-             ,succ
-             (progn
-               (setf pos ,pos values ,values)
-               ,fail))))))
+    (cond
+      ((and (zerop min) (eq max 1))
+       (let ((block (gensym "BLOCK")))
+         `(progn
+            (block ,block
+              ,(generate expression `(return-from ,block)))
+            ,succ)))
+      ((and (zerop min) (null max))
+       (let ((pos (gensym "POS"))
+             (values (gensym "VALUES"))
+             (loop-tag (gensym "LOOP")))
+         `(tagbody
+            ,loop-tag
+            ,(generate expression `(go ,loop-tag))
+            ,succ)))
+      (t
+       (let ((pos (gensym "POS"))
+             (values (gensym "VALUES"))
+             (succ-tag (gensym "SUCC"))
+             (fail-tag (gensym "FAIL"))
+             (loop-tag (gensym "LOOP"))
+             (i (gensym "I")))
+         `(let ((,pos (the fixnum pos))
+                (,values values)
+                (,i 0))
+            (tagbody
+              ,loop-tag
+              ,(generate expression
+                 (if max
+                     `(if (< (incf ,i) ,max)
+                          (go ,loop-tag)
+                          (go ,succ-tag))
+                     `(progn (incf ,i) (go ,loop-tag))))
+              ,@(when (< 0 min)
+                  `((when (< ,i ,min)
+                      (go ,fail-tag))))
+              ,succ-tag
+              ,succ
+              ,fail-tag
+              (setf pos ,pos values ,values))))))))
 
-(defmethod generate ((self call) succ fail)
+(defmethod generate ((self call) succ)
   `(multiple-value-bind (succ pos* values*)
        (,(call-symbol self) pos)
-     (if succ 
-         (progn
-           (setf pos pos*
-                 values (concatenate 'list values* values))
-           ,succ)
-         ,fail)))
+     (when succ
+       (setf pos pos*
+             values (concatenate 'list values* values))
+       ,succ)))
 
-(defmethod generate ((self capture) succ fail)
+(defmethod generate ((self capture) succ)
   (let ((pos (gensym "POS")))
     `(let ((,pos pos))
        ,(generate (capture-expression self)
                   `(progn
                      (push (subseq *text* ,pos pos) values)
-                     ,succ)
-                  fail))))
+                     ,succ)))))
 
-(defmethod generate ((self &) succ fail)
+(defmethod generate ((self &) succ)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES")))
     `(let ((,pos (the fixnum pos))
@@ -161,38 +157,37 @@
        ,(generate (&-expression self)
                   `(progn
                     (setf pos ,pos values ,values)
-                    ,succ)
-                  fail))))
+                    ,succ)))))
 
-(defmethod generate ((self !) succ fail)
+(defmethod generate ((self !) succ)
   (let ((pos (gensym "POS"))
-        (values (gensym "VALUES")))
-    `(let ((,pos pos)
-           (,values values))
-       ,(generate (!-expression self)
-                  `(progn
-                    (setf pos ,pos values ,values)
-                    ,fail)
-                  succ))))
+        (values (gensym "VALUES"))
+        (block (gensym "BLOCK")))
+    `(block ,block
+       (let ((,pos pos)
+             (,values values))
+         ,(generate (!-expression self)
+                    `(progn
+                       (setf pos ,pos values ,values)
+                       (return-from ,block)))
+         ,succ))))
 
-(defmethod generate ((self @) succ fail)
+(defmethod generate ((self @) succ)
   (let ((values (gensym "VALUES")))
     `(let ((,values values))
        (setf values nil)
        ,(generate (@-expression self)
                   `(progn
                     (setf values (cons (reverse values) ,values))
-                    ,succ)
-                  `(progn
-                     (setf values ,values)
-                     ,fail)))))
+                    ,succ))
+       (setf values ,values))))
 
-(defmethod generate ((self ret) succ fail)
+(defmethod generate ((self ret) succ)
   `(progn
      (push ,(ret-value self) values)
      ,succ))
 
-(defmethod generate ((self modify) succ fail)
+(defmethod generate ((self modify) succ)
   (let ((values (gensym "VALUES")))
     `(let ((,values values))
        (setf values nil)
@@ -202,12 +197,10 @@
                           (cons (apply ,(modify-function self)
                                        (reverse values))
                                 ,values))
-                    ,succ)
-                  `(progn
-                     (setf values ,values)
-                     ,fail)))))
+                    ,succ))
+       (setf values ,values))))
 
-(defmethod generate ((self guard) succ fail)
+(defmethod generate ((self guard) succ)
   (let ((values (gensym "VALUES"))
         (block (gensym "BLOCK")))
     `(let ((,values values))
@@ -219,28 +212,19 @@
                         (setf values (concatenate 'list values ,values))
                         ,succ)
                        (t
-                        (return-from ,block)))
-                    `(return-from ,block)))
-       (setf values ,values)
-       ,fail)))
+                        (return-from ,block)))))
+       (setf values ,values))))
 
-(defmethod generate ((self waste) succ fail)
+(defmethod generate ((self waste) succ)
   (let ((values (gensym "VALUES")))
     `(let ((,values values))
        ,(generate (waste-expression self)
                   `(progn
                      (setf values ,values)
-                     ,succ)
-                  fail))))
+                     ,succ)))))
 
-(defmethod generate ((self group) succ fail)
-  (let ((block (gensym "BLOCK")))
-    `(progn
-       (block ,block
-         (let ((*failed-pos* (fixnum-+ *text-length* 1)))
-           ,(generate (group-expression self)
-                      succ
-                      `(return-from ,block))))
-       (progn
-         (fail pos ',(group-name self))
-         ,fail))))
+(defmethod generate ((self group) succ)
+  `(progn
+     (let ((*failed-pos* (fixnum-+ *text-length* 1)))
+       ,(generate (group-expression self) succ))
+     (fail pos ',(group-name self))))
