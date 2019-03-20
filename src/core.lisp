@@ -80,14 +80,6 @@
                (declare (ignore key))
                (push (build-rule-definition value) definitions))
              *rules*)
-    (push '(fail (pos match)
-            (cond
-              ((< *failed-pos* pos)
-               (setf *failed-pos* pos
-                     *failed-matches* (list match)))
-              ((= *failed-pos* pos)
-               (push match *failed-matches*))))
-          definitions)
     `(let* ((*text* ,text)
             (*text-length* (length *text*))
             (*failed-matches* '())

@@ -225,3 +225,13 @@
      (let ((*failed-pos* (fixnum-+ *text-length* 1)))
        ,(generate (group-expression self) succ))
      (fail pos ',(group-name self))))
+
+
+(defun fail (pos match)
+  (declare (optimize (speed 3) (space 0) (safety 0)))
+  (cond
+    ((< *failed-pos* pos)
+     (setf *failed-pos* pos
+           *failed-matches* (list match)))
+    ((= *failed-pos* pos)
+     (push match *failed-matches*))))
