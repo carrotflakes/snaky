@@ -29,7 +29,7 @@
         (values (gensym "VALUES")))
     (dolist (exp (reverse (seq-expressions self)))
       (setf succ (generate exp succ)))
-    `(let ((,pos (the fixnum pos))
+    `(let ((,pos pos)
            (,values values))
        ,succ
        (setf pos ,pos values ,values))))
@@ -39,9 +39,8 @@
         (values (gensym "VALUES"))
         (succ-tag (gensym "SUCC-TAG"))
         (fail-tag (gensym "FAIL-TAG")))
-    `(let ((,pos (the fixnum pos))
+    `(let ((,pos pos)
            (,values values))
-       (declare (ignorable ,pos ,values))
        (tagbody
          ,@(loop
              for exp in (ordered-choice-expressions self)
@@ -100,9 +99,7 @@
               ,(generate expression `(return-from ,block)))
             ,succ)))
       ((and (zerop min) (null max))
-       (let ((pos (gensym "POS"))
-             (values (gensym "VALUES"))
-             (loop-tag (gensym "LOOP")))
+       (let ((loop-tag (gensym "LOOP")))
          `(tagbody
             ,loop-tag
             ,(generate expression `(go ,loop-tag))
@@ -114,7 +111,7 @@
              (fail-tag (gensym "FAIL"))
              (loop-tag (gensym "LOOP"))
              (i (gensym "I")))
-         `(let ((,pos (the fixnum pos))
+         `(let ((,pos pos)
                 (,values values)
                 (,i 0))
             (tagbody
@@ -152,7 +149,7 @@
 (defmethod generate ((self &) succ)
   (let ((pos (gensym "POS"))
         (values (gensym "VALUES")))
-    `(let ((,pos (the fixnum pos))
+    `(let ((,pos pos)
            (,values values))
        ,(generate (&-expression self)
                   `(progn
