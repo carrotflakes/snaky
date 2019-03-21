@@ -14,6 +14,11 @@
 (defvar *undetermined*)
 (defvar *rules* (make-hash-table :test 'eq))
 
+(declaim (type string *text*)
+         (type (simple-array fixnum *) *undetermined*)
+         (type fixnum *text-length* *failed-pos*))
+
+
 (defun build-read-cache (name)
   `(let ((cache (gethash (cons ',name origin-pos) *cache*)))
      (when cache
@@ -88,9 +93,6 @@
             (*undetermined* (make-array (1+ (length *text*))
                                         :element-type 'fixnum
                                         :initial-element 0)))
-       (declare (type string *text*)
-                (type (simple-array fixnum *) *undetermined*)
-                (type fixnum *text-length* *failed-pos*))
        (labels ,definitions
          (multiple-value-bind (succ pos values)
              (,rule-name 0)
