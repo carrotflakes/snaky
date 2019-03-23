@@ -16,9 +16,7 @@
                   (key (cons name arguments))
                   (new-name (or (gethash key rule-name-map)
                                 (setf (gethash key rule-name-map)
-                                      (if (or arguments (special-operator-p name))
-                                          (gensym (symbol-name name))
-                                          name)))))
+                                      (gensym (symbol-name name))))))
              (when (/= (length parameters) (length arguments))
                (error "rule ~a takes ~a arguments (given ~a)"
                       name (length parameters) (length arguments)))
@@ -50,4 +48,4 @@
                     (reconstruct (slot-value expression 'expression) bindings))))
            expression))
       (traverse name '()))
-    new-rules))
+    (values (gethash (list name) rule-name-map) new-rules)))

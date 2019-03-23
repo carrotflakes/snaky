@@ -36,54 +36,59 @@
       (build-rule-definition-allow-left-recursion rule)))
   (let ((name (rule-name rule))
         (exp (rule-expression rule)))
-    `(,name (pos &aux values (origin-pos pos))
-            (declare (type fixnum pos origin-pos))
-            ,(build-read-cache name)
-            ,(generate exp
-                       `(progn
-                          ,(build-write-cache name '(cons pos values))
-                          (return-from ,name (values t pos values))))
-            ,(build-write-cache name ''failed)
-            (return-from ,name (values nil 0 nil)))))
+    `((pos &aux values (origin-pos pos))
+      (declare (type fixnum pos origin-pos))
+      (block ,name
+        ,(build-read-cache name)
+        ,(generate exp
+                   `(progn
+                      ,(build-write-cache name '(cons pos values))
+                      (return-from ,name (values t pos values))))
+        ,(build-write-cache name ''failed)
+        (return-from ,name (values nil 0 nil))))))
 
 (defun build-rule-definition-allow-left-recursion (rule)
   (let ((name (rule-name rule))
         (exp (rule-expression rule)))
-    `(,name (pos &aux (origin-pos pos))
-            (declare (type fixnum pos origin-pos))
-            ,(build-read-cache name)
-            (setf (aref *undetermined* origin-pos)
-                  (fixnum-+ (aref *undetermined* origin-pos) 1))
-            ,(build-write-cache name ''failed)
-            (loop
-              named loop
-              with last-pos fixnum = pos
-              for values = nil
-              do (progn
-                   (setf pos origin-pos)
-                   (block body
-                     ,(generate exp
-                                '(if (<= pos last-pos)
-                                  (return-from loop)
-                                  (return-from body)))
-                     (return-from loop))
-                   (setf last-pos pos)
-                   ,(build-write-cache name '(cons pos values))))
-            (let ((cache (gethash (cons ',name origin-pos) *cache*)))
-              (setf (aref *undetermined* origin-pos)
-                    (the fixnum (1- (the fixnum (aref *undetermined* origin-pos)))))
-              (unless (zerop (aref *undetermined* origin-pos))
-                (remhash (cons ',name origin-pos) *cache*))
-              (if (eq cache 'failed)
-                  (return-from ,name (values nil 0 nil))
-                  (return-from ,name (values t (car cache) (cdr cache))))))))
+    `((pos &aux (origin-pos pos))
+      (declare (type fixnum pos origin-pos))
+      (block ,name
+        ,(build-read-cache name)
+        (setf (aref *undetermined* origin-pos)
+              (fixnum-+ (aref *undetermined* origin-pos) 1))
+        ,(build-write-cache name ''failed)
+        (loop
+          named loop
+          with last-pos fixnum = pos
+          for values = nil
+          do (progn
+               (setf pos origin-pos)
+               (block body
+                 ,(generate exp
+                            '(if (<= pos last-pos)
+                              (return-from loop)
+                              (return-from body)))
+                 (return-from loop))
+               (setf last-pos pos)
+               ,(build-write-cache name '(cons pos values))))
+        (let ((cache (gethash (cons ',name origin-pos) *cache*)))
+          (setf (aref *undetermined* origin-pos)
+                (the fixnum (1- (the fixnum (aref *undetermined* origin-pos)))))
+          (unless (zerop (aref *undetermined* origin-pos))
+            (remhash (cons ',name origin-pos) *cache*))
+          (if (eq cache 'failed)
+              (return-from ,name (values nil 0 nil))
+              (return-from ,name (values t (car cache) (cdr cache)))))))))
 
 (defun build-parser-body (rule-name text)
-  (let ((*rules* (rule-reconstruct rule-name *rules*))
-        (definitions '()))
+  (multiple-value-bind (rule-name *rules*) (rule-reconstruct rule-name *rules*)
     (maphash (lambda (key value)
-               (declare (ignore key))
-               (push (build-rule-definition value) definitions))
+               (declare (ignore value))
+               (eval `(declaim (ftype (function (fixnum) (values t t t)) ,key))))
+             *rules*)
+    (maphash (lambda (key value)
+               (setf (symbol-function key)
+                     (eval `(lambda ,@(build-rule-definition value)))))
              *rules*)
     `(let* ((*text* ,text)
             (*text-length* (length *text*))
@@ -93,7 +98,6 @@
             (*undetermined* (make-array (1+ (length *text*))
                                         :element-type 'fixnum
                                         :initial-element 0)))
-       (labels ,definitions
          (multiple-value-bind (succ pos values)
              (,rule-name 0)
            (declare (type fixnum pos))
@@ -117,4 +121,4 @@
                         column
                         *failed-matches*
                         found))))
-             (first values))))))
+             (first values)))))
