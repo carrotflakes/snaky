@@ -4,7 +4,7 @@
   (:export :rule-reconstruct))
 (in-package :snaky.rule-reconstruct)
 
-(defun rule-reconstruct (name rules)
+(defun rule-reconstruct (expression rules)
   (let ((new-rules (make-hash-table :test 'eq))
         (rule-name-map (make-hash-table :test 'equal)))
     (labels
@@ -47,5 +47,4 @@
               (setf (slot-value expression 'expression)
                     (reconstruct (slot-value expression 'expression) bindings))))
            expression))
-      (traverse name '()))
-    (values (gethash (list name) rule-name-map) new-rules)))
+      (values (reconstruct expression '()) new-rules))))

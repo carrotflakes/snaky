@@ -226,4 +226,14 @@
 (is (parse 'block "blocked by block!")
     'nil)
 
+(diag "one-line parse")
+
+(defparser one-line-parse (cap (+ (or "a" "b"))))
+
+(is (one-line-parse "abbaaab")
+    "abbaaab")
+
+(is (parse '(cap (+ (or "a" "b"))) "bbbaba")
+    "bbbaba")
+
 (finalize)

@@ -80,8 +80,8 @@
               (return-from ,name (values nil 0 nil))
               (return-from ,name (values t (car cache) (cdr cache)))))))))
 
-(defun build-parser-body (rule-name text)
-  (multiple-value-bind (rule-name *rules*) (rule-reconstruct rule-name *rules*)
+(defun build-parser-body (expression text)
+  (multiple-value-bind (expression *rules*) (rule-reconstruct expression *rules*)
     (maphash (lambda (key value)
                (declare (ignore value))
                (eval `(declaim (ftype (function (fixnum) (values t t t)) ,key))))
@@ -97,28 +97,33 @@
             (*cache* (make-hash-table :test 'equal))
             (*undetermined* (make-array (1+ (length *text*))
                                         :element-type 'fixnum
-                                        :initial-element 0)))
-         (multiple-value-bind (succ pos values)
-             (,rule-name 0)
-           (declare (type fixnum pos))
-           (unless (and succ (= *text-length* pos))
-             (when succ
-               (fail pos "end of input"))
-             (when (null *failed-matches*)
-               (push "something" *failed-matches*))
-             (setf *failed-matches*
-                   (remove-duplicates *failed-matches* :test #'string=))
-             (let ((found
-                     (if (= *failed-pos* *text-length*)
-                         "end of input"
-                         (prin1-to-string (subseq *text*
-                                                  *failed-pos*
-                                                  (1+ *failed-pos*))))))
-               (multiple-value-bind (line column)
-                   (string-line-column *text* *failed-pos*)
-                 (error "parse failed at line ~a column ~a: expected ~{~a~^, ~} but ~a found."
-                        line
-                        column
-                        *failed-matches*
-                        found))))
-             (first values)))))
+                                        :initial-element 0))
+            (succ nil)
+            (pos 0)
+            (values nil))
+       (declare (type fixnum pos))
+       ,(let ((block (gensym "BLOCK")))
+          `(block ,block
+             ,(generate expression `(progn (setf succ t)
+                                           (return-from ,block)))))
+       (unless (and succ (= *text-length* pos))
+         (when succ
+           (fail pos "end of input"))
+         (when (null *failed-matches*)
+           (push "something" *failed-matches*))
+         (setf *failed-matches*
+               (remove-duplicates *failed-matches* :test #'string=))
+         (let ((found
+                 (if (= *failed-pos* *text-length*)
+                     "end of input"
+                     (prin1-to-string (subseq *text*
+                                              *failed-pos*
+                                              (1+ *failed-pos*))))))
+           (multiple-value-bind (line column)
+               (string-line-column *text* *failed-pos*)
+             (error "parse failed at line ~a column ~a: expected ~{~a~^, ~} but ~a found."
+                    line
+                    column
+                    *failed-matches*
+                    found))))
+       (first values))))
