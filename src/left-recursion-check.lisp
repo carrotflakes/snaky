@@ -9,11 +9,13 @@
 (defun expression-left-recursive (exp rule &optional visited-rules)
   (ecase (type-of exp)
     ((seq)
+     (assert (consp (seq-expressions exp)))
      (loop
        for exp in (seq-expressions exp)
        for property = (expression-left-recursive exp rule visited-rules)
        when (member property '(:progressive :left-recursive))
-       return property))
+       return property
+       finally (return :stagnant)))
     ((ordered-choice)
      (let ((property :progressive))
        (loop
@@ -55,8 +57,11 @@
                                 (error "rule ~a is undefined" symbol)))
            rule
            (cons symbol visited-rules))))))
-    ((ret))))
+    ((ret)
+     :stagnant)))
 
 (defun rule-left-recursive (rule rules)
-  (let ((*rules* rules))
-    (expression-left-recursive (rule-expression rule) (rule-name rule))))
+  (let* ((*rules* rules)
+         (property (expression-left-recursive (rule-expression rule) (rule-name rule))))
+    (assert property)
+    property))
