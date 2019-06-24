@@ -99,13 +99,19 @@
               ,(generate expression `(return-from ,block)))
             ,succ)))
       ((and (zerop min) (null max))
-       (let ((loop-tag (gensym "LOOP")))
+       (let ((loop-tag (gensym "LOOP"))
+             (prev-pos (gensym "PREV-POS")))
          `(tagbody
             ,loop-tag
-            ,(generate expression `(go ,loop-tag))
+            (let ((,prev-pos pos))
+              ,(generate expression
+                         `(if (= ,prev-pos pos)
+                              (error "infinite loop detected")
+                              (go ,loop-tag))))
             ,succ)))
       (t
        (let ((pos (gensym "POS"))
+             (prev-pos (gensym "PREV-POS"))
              (values (gensym "VALUES"))
              (succ-tag (gensym "SUCC"))
              (fail-tag (gensym "FAIL"))
@@ -116,12 +122,17 @@
                 (,i 0))
             (tagbody
               ,loop-tag
-              ,(generate expression
-                 (if max
-                     `(if (< (incf ,i) ,max)
-                          (go ,loop-tag)
-                          (go ,succ-tag))
-                     `(progn (incf ,i) (go ,loop-tag))))
+              ,(let ((body (generate expression
+                                     (if max
+                                         `(if (< (incf ,i) ,max)
+                                              (go ,loop-tag)
+                                              (go ,succ-tag))
+                                         `(progn
+                                            (when (= ,prev-pos pos)
+                                              (error "infinite loop detected"))
+                                            (incf ,i)
+                                            (go ,loop-tag))))))
+                 (if max body `(let ((,prev-pos pos)) ,body)))
               ,@(when (< 0 min)
                   `((when (< ,i ,min)
                       (go ,fail-tag))))

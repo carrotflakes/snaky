@@ -236,4 +236,18 @@
 (is (parse '(cap (+ (or "a" "b"))) "bbbaba")
     "bbbaba")
 
+(diag "infinite loop detected error")
+
+(is-error
+ (parse '(* (* "a")) "aaa")
+ 'simple-error)
+
+(is-error
+ (parse '(* (or "a" "")) "aaa")
+ 'simple-error)
+
+(is-error
+ (parse '(rep "" 1 nil) "aaa")
+ 'simple-error)
+
 (finalize)
